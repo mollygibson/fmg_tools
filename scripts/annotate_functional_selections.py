@@ -6,10 +6,11 @@ __email__ = "molly.gibson@wustl.edu"
 
 # Python imports
 import argparse, subprocess, os, itertools, operator
+# Other imports
 import parse_config, parse_mapping
 
 def main():
-    parser = argparse.ArgumentParser(description="This script analyzes output from \
+    parser = argparse.ArgumentParser(description="This script annotates output from \
               antibiotic functional metagenomic selections assembled using PARFuMS.")
 
     # arguments
@@ -48,9 +49,11 @@ def main():
     annotation_fp = annotate_proteins(protein_fp, output_fp, args)
     
     # merge hmm files
-    if not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.txt'):
+    if not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.txt') or args.override:
         merge_hmm_files(output_fp, prefix, args)
-    if not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.final.txt'):
+
+    # process hmm files further
+    if not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.final.txt') or args.override:
         process_hmm_file(output_fp, prefix, args)
 
 def call_orfs(contigs, output_fp, prefix, args):    
@@ -94,9 +97,9 @@ def call_orfs(contigs, output_fp, prefix, args):
             length = headerPieces[0].split("_Len:")[1]
 
             if args.mapping_fp:
-                newHeader = "> ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+                newHeader = ">" + sample_name + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
             else:
-                newHeader = "> ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+                newHeader = ">" + sample_name + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
             newNucFile.write(newHeader + "\n")
             contigNames.write(newHeader + "\n")
         else:
@@ -125,9 +128,9 @@ def call_orfs(contigs, output_fp, prefix, args):
             length = headerPieces[0].split("_Len:")[1]
 
             if args.mapping_fp:
-                newHeader = "> ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+                newHeader = ">" + sample_name + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
             else:
-                newHeader = "> ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4]+ " orientation:" + headerPieces[6]
+                newHeader = ">" + sample_name + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4]+ " orientation:" + headerPieces[6]
             newProteinFile.write(newHeader + "\n")
             contigNames.write(newHeader + "\n")
         else:
@@ -184,7 +187,7 @@ def merge_hmm_files(output_fp, prefix, args):
         resfams.seek(0)
 
         hits = []
-        contig_id =  line.split()[1].split(":")[1] + "_Contig_" + line.split()[2].split(":")[1] + "_" + "_".join(line.split()[3:5])
+        contig_id =  line.split()[0].strip(">") + "_Contig_" + line.split()[2].split(":")[1] + "_" + "_".join(line.split()[3:5])
         contig_start = line.split()[6].split(":")[1]
         contig_end = line.split()[7].split(":")[1]
         contig_ori = line.split()[8].split(":")[1]
