@@ -33,11 +33,16 @@ def main():
         parser.exit(status=0, message="You must only use one resfams database\n Check usage with 'annotation_functional_selections.py -h'.\n\n")
 
     # set the output path and make the directory
-    prefix = os.path.splitext(args.contig_fp)[0]
+    if args.contig_fp:
+        prefix = os.path.splitext(args.contig_fp)[0]
+    elif args.protein_fp:
+        prefix = os.path.splitext(args.protein_fp)[0]
+
     if not args.output_fp:
-        output_fp = os.path.splitext(args.contig_fp)[0] + "_annotation"
+        output_fp = prefix + "_annotation"
     else:
         output_fp = args.output_fp
+
     if not os.path.isdir(output_fp):
         subprocess.call('mkdir ' + output_fp, shell=True)
 
@@ -49,11 +54,11 @@ def main():
     annotation_fp = annotate_proteins(protein_fp, output_fp, args)
     
     # merge hmm files
-    if not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.txt') or args.override:
+    if (not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.txt') or args.override) and args.contig_fp:
         merge_hmm_files(output_fp, prefix, args)
 
     # process hmm files further
-    if not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.final.txt') or args.override:
+    if (not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.final.txt') or args.override) and args.contig_fp:
         process_hmm_file(output_fp, prefix, args)
 
 def call_orfs(contigs, output_fp, prefix, args):    
@@ -91,17 +96,17 @@ def call_orfs(contigs, output_fp, prefix, args):
                         break
             headerPieces = sequenceHeader.split('\t')
 
-            sample_name = headerPieces[0].split("_Contig_")[0]
-            contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
-            mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
-            length = headerPieces[0].split("_Len:")[1]
+#            sample_name = headerPieces[0].split("_Contig_")[0]
+#            contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
+#            mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
+#            length = headerPieces[0].split("_Len:")[1]
 
-            if args.mapping_fp:
-                newHeader = ">" + sample_name + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
-            else:
-                newHeader = ">" + sample_name + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
-            newNucFile.write(newHeader + "\n")
-            contigNames.write(newHeader + "\n")
+#            if args.mapping_fp:
+#                newHeader = ">" + sample_name + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+#            else:
+#                newHeader = ">" + sample_name + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+            newNucFile.write(">" + headerPieces[0] + "_" + headerPieces[3] + "_" + headerPieces[4] + "_" + headerPieces[6] + "\n")
+            contigNames.write(">" + headerPieces[0] + "_" + headerPieces[3] + "_" + headerPieces[4] + "_" + headerPieces[6] + "\n")
         else:
             newNucFile.write(line)
 
@@ -122,17 +127,17 @@ def call_orfs(contigs, output_fp, prefix, args):
                         break
             headerPieces = sequenceHeader.split('\t')
 
-            sample_name = headerPieces[0].split("_Contig_")[0]
-            contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
-            mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
-            length = headerPieces[0].split("_Len:")[1]
+#            sample_name = headerPieces[0].split("_Contig_")[0]
+#            contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
+#            mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
+#            length = headerPieces[0].split("_Len:")[1]
 
-            if args.mapping_fp:
-                newHeader = ">" + sample_name + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
-            else:
-                newHeader = ">" + sample_name + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4]+ " orientation:" + headerPieces[6]
-            newProteinFile.write(newHeader + "\n")
-            contigNames.write(newHeader + "\n")
+#            if args.mapping_fp:
+#                newHeader = ">" + sample_name + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+#            else:
+#                newHeader = ">" + sample_name + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4]+ " orientation:" + headerPieces[6]
+            newProteinFile.write(">" + headerPieces[0] + "_" + headerPieces[3] + "_" + headerPieces[4] + "_" + headerPieces[6] +  "\n")
+            contigNames.write(">" + headerPieces[0] + "_" + headerPieces[3] + "_" + headerPieces[4] + "_" + headerPieces[6] + "\n")
         else:
             newProteinFile.write(line)
         
@@ -182,20 +187,22 @@ def merge_hmm_files(output_fp, prefix, args):
     contigs = open(output_fp + '/contig_names.txt', 'r') 
 
     for line in contigs:
+        print line
         pfam.seek(0)
         tigrfam.seek(0)
         resfams.seek(0)
 
         hits = []
-        contig_id =  line.split()[0].strip(">") + "_Contig_" + line.split()[2].split(":")[1] + "_" + "_".join(line.split()[3:5])
-        contig_start = line.split()[6].split(":")[1]
-        contig_end = line.split()[7].split(":")[1]
-        contig_ori = line.split()[8].split(":")[1]
-        contig = contig_id + "_" + contig_start + "_" + contig_end + "_" + contig_ori
-
-            # Process Pfam File                                                                                                                                                                                                            
+#        contig_id =  line.split()[0].strip(">") + "_Contig_" + line.split()[2].split(":")[1] + "_" + "_".join(line.split()[3:5])
+#        contig_start = line.split()[6].split(":")[1]
+#        contig_end = line.split()[7].split(":")[1]
+#        contig_ori = line.split()[8].split(":")[1]
+#        contig = contig_id + "_" + contig_start + "_" + contig_end + "_" + contig_ori
+        contig = line.strip(">").rstrip()
+        # Process Pfam File                                                                                                                                                                                                            
         for item in pfam:
             if contig in item:
+                print contig
                 pieces = item.rstrip().split()
                 description = pieces[18]
                 if len(pieces) > 19:
@@ -203,7 +210,7 @@ def merge_hmm_files(output_fp, prefix, args):
                 array = ["Pfam", pieces[1], pieces[2], pieces[3], float(pieces[4]), float(pieces[5]), float(pieces[6]), float(pieces[7]), float(pieces[8]), float(pieces[9]), description, pieces[0]]
                 hits.append(array)
 
-            # Process TIGRFam File                                                                                                                                                                                                         
+        # Process TIGRFam File                                                                                                                                                                                                         
         for item in tigrfam:
             if contig in item:
                 pieces = item.rstrip().split()
@@ -228,6 +235,7 @@ def merge_hmm_files(output_fp, prefix, args):
         final_list = []
         for item in hits:
             pieces = item[2].split('_')
+            print pieces
             start = pieces[len(pieces)-3]
             stop = pieces[len(pieces)-2]
             final_list.append([start, stop, item[0], item[1], item[10], item[4], item[5]])
@@ -253,9 +261,20 @@ def process_hmm_file(output_fp, prefix, args):
     no_annotation = False
     for line in hmm_annotations:
         if line.startswith(">"):
-            contig_name = "_".join(line.split()[1:5])
+            sample_name = line.split("_Contig_")[0].strip(">")
+            contig_num = line.split("_Contig_")[1].split("_")[0]
+            mean = line.split("_Mean:")[1].split("_")[0]
+            length = line.split("_Len:")[1].split("_")[0].rstrip()
+            start = line.split("_Len:")[1].split("_")[1].rstrip()
+            stop = line.split("_Len:")[1].split("_")[2].rstrip()
+            ori = line.split("_Len:")[1].split("_")[3].rstrip()
+            if args.mapping_fp:                                                                                                                                                                                                             
+                contig_name = ">" + sample_name + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + start + " stop:" + stop + " orientation:" + ori
+            else:
+                contig_name = ">" + sample_name + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + start + " stop:" + stop + " orientation:" + ori
+
             if not contig_name == save_contig_name:
-                output.write(" ".join(line.split()[1:6]) + "\n")
+                output.write(contig_name + "\n")
             save_contig_name = contig_name
             not_annotation = False
         elif not line.startswith("\t"):
@@ -270,3 +289,4 @@ def process_hmm_file(output_fp, prefix, args):
 
 if __name__ == "__main__":
     main()
+    
