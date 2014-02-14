@@ -114,7 +114,7 @@ def main():
         if args.nucleotide_fp:
             command = 'cat ' + output_fp + '/*_unique.fna > ' + output_fp + '/unique_within_abx_'+ args.percent_id + '.fna'
         else:
-            command = 'cat ' + output_fp + '/*_unique.faa > ' + output_fp + '/unique_within_lib_'+ args.percent_id + '.faa'
+            command = 'cat ' + output_fp + '/*_unique.faa > ' + output_fp + '/unique_within_abx_'+ args.percent_id + '.faa'
     else:
         if args.nucleotide_fp:
             command = 'cat ' + output_fp + '/*_unique.fna > ' + output_fp + '/all_unique_'+ args.percent_id + '.fna'
