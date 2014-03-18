@@ -8,6 +8,7 @@ __email__ = "molly.gibson@wustl.edu"
 import argparse, subprocess, os, itertools, operator
 # Other imports
 import parse_config, parse_mapping
+import helper as h
 
 def main():
     parser = argparse.ArgumentParser(description="This script collapses all redundant proteins \
@@ -28,7 +29,7 @@ def main():
 
     if args.within_lib and args.within_abx:
         parser.exit(status=0, message="You can only collapse on either library OR antibiotic selection. If you would like to collapse the entire \
-                          functional selection, don't provide either flat. \n Check usage with 'collapse_redundant_genes.py -h'.\n\n")
+                          functional selection, don't provide either flag. \n Check usage with 'collapse_redundant_genes.py -h'.\n\n")
 
     # Figure out the output directory if it isn't given
     if not args.output_fp:
@@ -47,6 +48,8 @@ def main():
                 output_fp = 'collapsed_nuc_' + str(args.percent_id)
             else:
                 output_fp = 'collapse_prot_' + str(args.percent_id)
+    else:
+        output_fp = args.output_fp
 
     # Make output directory
     if os.path.isdir(output_fp):
@@ -88,13 +91,14 @@ def main():
                 file_out.write(line)
     else:
         if args.protein_fp:
-            file_out = open(output_fp + "/protiens_updated.faa", 'a')
+            file_out = open(output_fp + "/all_proteins.faa", 'a')
             for line in open(args.protein_fp, 'r'):
                 file_out.write(line)
         else:
-            file_out = open(output_fp + "/proteins_updated.fna", 'a')
+            file_out = open(output_fp + "/all_nucleotides.fna", 'a')
             for line in open(args.nucleotide_fp, 'r'):
                 file_out.write(line)
+    file_out.close()
 
     # Run clustering
     for fasta in os.listdir(output_fp):
@@ -102,7 +106,7 @@ def main():
             command = 'cd-hit -i ' + output_fp + '/' + fasta + ' -o ' + output_fp + '/' + fasta.split('.')[0] + '_unique.faa -c ' + args.percent_id + ' -aS 1.0 -g 1 -d 0'
         elif args.nucleotide_fp:
             command = 'cd-hit-est -i ' + output_fp + '/' + fasta + ' -o ' + output_fp + '/' + fasta.split('.')[0] + '_unique.fna -c ' + args.percent_id + ' -aS 1.0 -g 1 -d 0 -r 1'
-        subprocess.call(command, shell=True)
+        h.run_command(command)
 
     # Concatenate and get annotation files
     if args.within_lib:
@@ -110,18 +114,14 @@ def main():
             command = 'cat ' + output_fp + '/*_unique.fna > ' + output_fp + '/unique_within_lib_' + args.percent_id + '.fna'
         else:
             command = 'cat ' + output_fp + '/*_unique.faa > ' + output_fp + '/unique_within_lib_'+ args.percent_id + '.faa'
+        h.run_command(command)
     elif  args.within_abx:
         if args.nucleotide_fp:
             command = 'cat ' + output_fp + '/*_unique.fna > ' + output_fp + '/unique_within_abx_'+ args.percent_id + '.fna'
         else:
             command = 'cat ' + output_fp + '/*_unique.faa > ' + output_fp + '/unique_within_abx_'+ args.percent_id + '.faa'
-    else:
-        if args.nucleotide_fp:
-            command = 'cat ' + output_fp + '/*_unique.fna > ' + output_fp + '/all_unique_'+ args.percent_id + '.fna'
-        else:
-            command = 'cat ' + output_fp + '/*_unique.faa > ' + output_fp + '/all_unique_'+ args.percent_id + '.faa'
-
-    subprocess.call(command, shell=True)
+        h.run_command(command)
+            
 
 if __name__ == "__main__":
     main()
