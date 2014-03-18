@@ -77,10 +77,12 @@ def call_orfs(contigs, output_fp, prefix, args):
 
     nucleotideFile = open(output_fp + '/nucleotides.fasta', 'r')
     newNucFile = open(output_fp + '/nucleotides_updated.fasta', 'w')
+    finalNuc = open(output_fp + '/nucleotides_final.fasta', 'w')
     proteinFile = open(output_fp + '/proteins.fasta', 'r')
     sequenceFile = open(output_fp + '/sequence.gff', 'r')
     newProteinFilePath = output_fp + '/proteins_updated.fasta'
     newProteinFile = open(output_fp + '/proteins_updated.fasta', 'w')
+    finalProtein = open(output_fp + '/proteins_final.fasta', 'w')
     contigNames = open(output_fp + '/contig_names.txt', 'w')
     
     for line in nucleotideFile:
@@ -96,18 +98,20 @@ def call_orfs(contigs, output_fp, prefix, args):
                         break
             headerPieces = sequenceHeader.split('\t')
 
-#            sample_name = headerPieces[0].split("_Contig_")[0]
-#            contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
-#            mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
-#            length = headerPieces[0].split("_Len:")[1]
+            sample_name = headerPieces[0].split("_Contig_")[0]
+            contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
+            mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
+            length = headerPieces[0].split("_Len:")[1]
 
-#            if args.mapping_fp:
-#                newHeader = ">" + sample_name + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
-#            else:
-#                newHeader = ">" + sample_name + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+            if args.mapping_fp:
+                newHeader = ">" + sample_name + "-" + contig_num + "-" +  headerPieces[3] + "-" + headerPieces[4] + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + contig_num + "-" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+            else:
+                newHeader = ">" + sample_name + "-" + contig_num + "-" + headerPieces[3] + "-" + headerPieces[4] + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+            finalNuc.write(newHeader + "\n")
             newNucFile.write(">" + headerPieces[0] + "_" + headerPieces[3] + "_" + headerPieces[4] + "_" + headerPieces[6] + "\n")
             contigNames.write(">" + headerPieces[0] + "_" + headerPieces[3] + "_" + headerPieces[4] + "_" + headerPieces[6] + "\n")
         else:
+            finalNuc.write(line)
             newNucFile.write(line)
 
     newNucFile.close()
@@ -127,18 +131,20 @@ def call_orfs(contigs, output_fp, prefix, args):
                         break
             headerPieces = sequenceHeader.split('\t')
 
-#            sample_name = headerPieces[0].split("_Contig_")[0]
-#            contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
-#            mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
-#            length = headerPieces[0].split("_Len:")[1]
+            sample_name = headerPieces[0].split("_Contig_")[0]
+            contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
+            mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
+            length = headerPieces[0].split("_Len:")[1]
 
-#            if args.mapping_fp:
-#                newHeader = ">" + sample_name + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
-#            else:
-#                newHeader = ">" + sample_name + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4]+ " orientation:" + headerPieces[6]
+            if args.mapping_fp:
+                newHeader = ">" + sample_name + "-" + contig_num +  "-" + headerPieces[3] + "-" + headerPieces[4] + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+            else:
+                newHeader = ">" + sample_name + "-" + contig_num + "-" + headerPieces[3] + "-" + headerPieces[4] + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4]+ " orientation:" + headerPieces[6]
+            finalProtein.write(newHeader + "\n")
             newProteinFile.write(">" + headerPieces[0] + "_" + headerPieces[3] + "_" + headerPieces[4] + "_" + headerPieces[6] +  "\n")
             contigNames.write(">" + headerPieces[0] + "_" + headerPieces[3] + "_" + headerPieces[4] + "_" + headerPieces[6] + "\n")
         else:
+            finalProtein.write(line)
             newProteinFile.write(line)
         
     newProteinFile.close()
@@ -193,11 +199,6 @@ def merge_hmm_files(output_fp, prefix, args):
         resfams.seek(0)
 
         hits = []
-#        contig_id =  line.split()[0].strip(">") + "_Contig_" + line.split()[2].split(":")[1] + "_" + "_".join(line.split()[3:5])
-#        contig_start = line.split()[6].split(":")[1]
-#        contig_end = line.split()[7].split(":")[1]
-#        contig_ori = line.split()[8].split(":")[1]
-#        contig = contig_id + "_" + contig_start + "_" + contig_end + "_" + contig_ori
         contig = line.strip(">").rstrip()
         # Process Pfam File                                                                                                                                                                                                            
         for item in pfam:
@@ -269,9 +270,9 @@ def process_hmm_file(output_fp, prefix, args):
             stop = line.split("_Len:")[1].split("_")[2].rstrip()
             ori = line.split("_Len:")[1].split("_")[3].rstrip()
             if args.mapping_fp:                                                                                                                                                                                                             
-                contig_name = ">" + sample_name + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + start + " stop:" + stop + " orientation:" + ori
+                contig_name = ">" + sample_name + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] 
             else:
-                contig_name = ">" + sample_name + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + start + " stop:" + stop + " orientation:" + ori
+                contig_name = ">" + sample_name + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" 
 
             if not contig_name == save_contig_name:
                 output.write(contig_name + "\n")
