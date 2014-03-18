@@ -104,9 +104,9 @@ def call_orfs(contigs, output_fp, prefix, args):
             length = headerPieces[0].split("_Len:")[1]
 
             if args.mapping_fp:
-                newHeader = ">" + sample_name + "-" + contig_num + "-" +  headerPieces[3] + "-" + headerPieces[4] + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + contig_num + "-" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+                newHeader = ">" + sample_name + "." + contig_num + ":" +  headerPieces[3] + "-" + headerPieces[4] + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + contig_num + "-" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
             else:
-                newHeader = ">" + sample_name + "-" + contig_num + "-" + headerPieces[3] + "-" + headerPieces[4] + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+                newHeader = ">" + sample_name + "." + contig_num + ":" + headerPieces[3] + "-" + headerPieces[4] + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
             finalNuc.write(newHeader + "\n")
             newNucFile.write(">" + headerPieces[0] + "_" + headerPieces[3] + "_" + headerPieces[4] + "_" + headerPieces[6] + "\n")
             contigNames.write(">" + headerPieces[0] + "_" + headerPieces[3] + "_" + headerPieces[4] + "_" + headerPieces[6] + "\n")
@@ -137,9 +137,9 @@ def call_orfs(contigs, output_fp, prefix, args):
             length = headerPieces[0].split("_Len:")[1]
 
             if args.mapping_fp:
-                newHeader = ">" + sample_name + "-" + contig_num +  "-" + headerPieces[3] + "-" + headerPieces[4] + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+                newHeader = ">" + sample_name + "." + contig_num +  ":" + headerPieces[3] + "-" + headerPieces[4] + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
             else:
-                newHeader = ">" + sample_name + "-" + contig_num + "-" + headerPieces[3] + "-" + headerPieces[4] + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4]+ " orientation:" + headerPieces[6]
+                newHeader = ">" + sample_name + "." + contig_num + ":" + headerPieces[3] + "-" + headerPieces[4] + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4]+ " orientation:" + headerPieces[6]
             finalProtein.write(newHeader + "\n")
             newProteinFile.write(">" + headerPieces[0] + "_" + headerPieces[3] + "_" + headerPieces[4] + "_" + headerPieces[6] +  "\n")
             contigNames.write(">" + headerPieces[0] + "_" + headerPieces[3] + "_" + headerPieces[4] + "_" + headerPieces[6] + "\n")
