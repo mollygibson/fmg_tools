@@ -2,11 +2,11 @@
 __author__ = "Molly Gibson"
 __email__ = "molly.gibson@wustl.edu"
 
-
 # Python imports                                                                                                                                                                  
-import argparse, subprocess, os, itertools, operator, random
+import argparse, subprocess, os, itertools, operator, random, sys
 from os.path import basename
-from Bio import SeqIO
+from Bio import SeqIO 
+import pandas
 
 # Other imports                                                                                                                                                             
 import parse_config, parse_mapping
@@ -27,28 +27,32 @@ def main():
         cmd = "mkdir " + args.output_fp
         run_command(cmd)
 
-    # Rarify Reads
-    print "Rarefying Reads"
-    print "Dataset\tTotal\tRare"
-
-    seed_number = random.randint(0,100)  # Use a seed so that the paired reads pick the same random subset
 
     forward_paired_q_fp = args.output_fp + "/forward_quality_paired_" + str(args.paired_levl) + ".fastq"
-    if not os.path.exists(forward_paired_q_fp):
-        for_file = open(args.forward_fp, "rU")
-        forward_paired_reads = list(SeqIO.parse(for_file, "fastq"))
-        random.seed(seed_number)
-        rare_forward_reads = random.sample(forward_paired_reads, int(args.paired_levl))
-        print "Forward Paired\t" + str(len(forward_paired_reads)) + "\t" + str(len(rare_forward_reads))
-        SeqIO.write(rare_forward_reads, forward_paired_q_fp, "fastq")
-    
     reverse_paired_q_fp= args.output_fp + "/reverse_quality_paired_" + str(args.paired_levl) +".fastq"
-    if not os.path.exists(reverse_paired_q_fp):
-        rev_file = open(args.reverse_fp, "rU")
+    if not os.path.exists(forward_paired_q_fp) or not os.path.exists(reverse_paired_q_fp):
+        # Read in forward and reverse reads
+        for_file = open(args.forward_fp, "rU") # FORWARD
+        forward_paired_reads = list(SeqIO.parse(for_file, "fastq"))
+        print "Forward reads read."
+        sys.stdout.flush()
+        rev_file = open(args.reverse_fp, "rU") # REVERSE
         reverse_paired_reads = list(SeqIO.parse(rev_file, "fastq"))
-        random.seed(seed_number)
-        rare_reverse_reads = random.sample(reverse_paired_reads, int(args.paired_levl))
-        print "Reverse Paired\t" + str(len(reverse_paired_reads)) + "\t" + str(len(rare_reverse_reads))
+        print "Reverse reads read."
+        sys.stdout.flush()
+
+        # pick indecies to keep
+        randIndex = random.sample(range(len(forward_paired_reads)), int(args.paired_levl))
+        randIndex.sort()
+
+        # forward reads rarefy
+        randIndex = random.sample(range(len(forward_paired_reads)), int(args.paired_levl))
+        randIndex.sort()
+        rare_forward_reads = [forward_paired_reads[i] for i in randIndex]
+        SeqIO.write(rare_forward_reads, forward_paired_q_fp, "fastq")
+
+        # reverse reads rarefy
+        rare_reverse_reads = [reverse_paired_reads[i] for i in randIndex]
         SeqIO.write(rare_reverse_reads, reverse_paired_q_fp, "fastq")
 
     unpaired_q_fp= args.output_fp + "/quality_unpaired_" + str(args.unpaired_levl) +".fastq"
@@ -63,11 +67,11 @@ def main():
     index = os.path.splitext(args.contig_fp)[0]
     sam_unpaired_fp = args.output_fp + "/unpaired.sam"
     if not os.path.exists(sam_unpaired_fp):
-        cmd = "bowtie2 -x " + index + " -U " + unpaired_q_fp + " -S " + sam_unpaired_fp + " --score-min L,0,-0.17"
+        cmd = "bowtie2 -x " + index + " -U " + unpaired_q_fp + " -S " + sam_unpaired_fp + " --score-min L,0,-0.17 -a"
         run_command(cmd)
     sam_paired_fp = args.output_fp + "/paired.sam"
     if not os.path.exists(sam_paired_fp):
-        cmd = "bowtie2 -x " + index + " -1 " + forward_paired_q_fp + " -2 " + reverse_paired_q_fp + " -S " + sam_paired_fp + " --score-min L,0,-0.17 -I 250 -X 500 --no-discordant --no-contain"
+        cmd = "bowtie2 -x " + index + " -1 " + forward_paired_q_fp + " -2 " + reverse_paired_q_fp + " -S " + sam_paired_fp + " --score-min L,0,-0.17 -I 250 -X 500 --no-discordant --no-contain -a"
         run_command(cmd)
 
     # Create pileups using samtools
@@ -94,6 +98,86 @@ def main():
     if not os.path.exists(pileup_file_paired):
         cmd = "samtools mpileup -f " + args.contig_fp + " " + sort_bam_paired_fp + ".bam > " + pileup_file_paired
         run_command(cmd)
+
+    coverage_file = args.output_fp + "/coverage.txt"
+    percent_coverage_file = args.output_fp + "/percent_coverage_by_contig.txt"
+#    if not os.path.exists(coverage_file):
+    [ave_cov, perc_cov_base,total_base_by_contig,per_cov_contigs,ave_cov_contigs] = calculate_average_coverage(pileup_file_paired, pileup_file_unpaired, args.contig_fp)
+    total_reads = int(args.paired_levl) + int(args.unpaired_levl)
+
+    output = open(coverage_file, 'w')
+    output.write(str(total_reads) + "\t" + str(ave_cov) + "\t" + str(perc_cov_base) + "\n")
+
+    output2 = open(percent_coverage_file, 'w')
+    for contig_num in total_base_by_contig.keys():
+        output2.write(contig_num + "\t" + str(total_reads) + "\t" + str(total_base_by_contig[contig_num]) + "\t" + str(per_cov_contigs[contig_num]) + "\n")
+
+
+def calculate_average_coverage(paired_pileup_fp, unpaired_pileup_fp, reference):
+    # Calcualte the total number of bases in the functional metagenomics file
+    contig_metadata = pandas.io.parsers.read_table(reference + ".fai", header=None)
+    total_base_positions = contig_metadata[1].sum()
+    
+    contig_metadata.columns = ['contig', 'read_len1', 'offset', 'reads_len2', 'other']
+    total_base_by_contig = dict(zip(contig_metadata.contig, contig_metadata.read_len1))
+
+    # Import both paire and unpaired pileups
+    paired = pandas.io.parsers.read_table(paired_pileup_fp, header=None)
+    paired_coverage = paired.loc[:,[0,1,3]]
+
+    unpaired = pandas.io.parsers.read_table(unpaired_pileup_fp, header=None)
+    unpaired_coverage = unpaired.loc[:,[0,1,3]]
+
+    # Joine the two dataframes together on both the contig and the position
+    index = [unpaired_coverage[0], unpaired_coverage[1]]
+    tuples = list(zip(*index))
+    unpaired_coverage.index = tuples
+
+    index = [paired_coverage[0], paired_coverage[1]]
+    tuples = list(zip(*index))
+    paired_coverage.index = tuples
+
+    paired_coverage.columns = ['contig1', 'position1', 'coverage1']
+    unpaired_coverage.columns = ['contig2', 'position2', 'coverage2']
+
+    joined_df = unpaired_coverage.join(paired_coverage, how="outer")
+    coverage_df = joined_df.loc[:,['contig1', 'coverage1', 'coverage2']]
+
+    # sum the coverage for paired and unpaired
+    coverage_df['sum'] = coverage_df.sum(axis=1)
+    average_coverage_per_base =  coverage_df['sum'].sum()/total_base_positions
+
+    # count the number of bases with >0 reads
+    ser = pandas.Series(coverage_df['sum'])
+    num_bases_greater = (ser >= 1).sum()
+    percent_covered_bases = num_bases_greater/float(total_base_positions)
+
+    # Do this again by contig
+    contigs = coverage_df.groupby('contig1')
+    
+    # bp covered
+    per_cov_dict = coverage_df.groupby('contig1').size()
+    per_cov_contigs = {}
+    for contig_num in total_base_by_contig.keys():
+        if contig_num in per_cov_dict:
+            per_cov_contigs[contig_num] = float(per_cov_dict[contig_num])/total_base_by_contig[contig_num]
+        else:
+            per_cov_contigs[contig_num] = 0
+
+
+    # ave coverage
+    ave_cov_df = contigs.sum()
+    ave_cov_dict = ave_cov_df['sum'].to_dict()
+    ave_cov_contigs = {}
+    for contig_num in total_base_by_contig.keys():
+        if contig_num in per_cov_dict.keys():
+            ave_cov_contigs[contig_num] = ave_cov_dict[contig_num]/total_base_by_contig[contig_num]
+        else:
+            ave_cov_contigs[contig_num] = 0
+    
+    # basepairs covered
+            
+    return [average_coverage_per_base, percent_covered_bases, total_base_by_contig, per_cov_contigs, ave_cov_contigs]
 
 def run_command(command):
     runCmd = subprocess.Popen(command,shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
