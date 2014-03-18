@@ -7,6 +7,7 @@ __email__ = "molly.gibson@wustl.edu"
 # Python imports
 import argparse, subprocess, os, itertools, operator
 # Other imports
+from Bio import SeqIO
 import parse_config, parse_mapping
 import helper as h
 
@@ -17,6 +18,7 @@ def main():
     parser.add_argument('-prot', dest="protein_fp", help="Path to updated proteins from annotation output")
     parser.add_argument('-nucl', dest="nucleotide_fp", help="Path to updated nucleotides from annotation output")
     parser.add_argument('-id', dest="percent_id", help="Percent identity to collapse genes on", default="1.0")
+    parser.add_argument('-m', dest="mapping_fp", help="Mapping file path")
     parser.add_argument('--lib', dest="within_lib", help="Collapse within library", action="store_true", default=False)
     parser.add_argument('--abx', dest="within_abx", help="Collapse within antibiotic", action="store_true", default=False)
     parser.add_argument('-o', dest="output_fp", help="Path to output directory")
@@ -31,7 +33,7 @@ def main():
         parser.exit(status=0, message="You can only collapse on either library OR antibiotic selection. If you would like to collapse the entire \
                           functional selection, don't provide either flag. \n Check usage with 'collapse_redundant_genes.py -h'.\n\n")
 
-    # Figure out the output directory if it isn't given
+    # determine the output directory if it isn't given
     if not args.output_fp:
         if args.within_lib:
             if args.nucleotide_fp:
@@ -51,7 +53,7 @@ def main():
     else:
         output_fp = args.output_fp
 
-    # Make output directory
+    # make output directory
     if os.path.isdir(output_fp):
         if args.override:
             subprocess.call('rm -r ' + output_fp, shell=True)
@@ -62,7 +64,20 @@ def main():
     else:
         subprocess.call('mkdir ' + output_fp, shell=True)
 
-    # Split the files
+    # split the files by library 
+    split_fasta_file(output_fp, args)
+
+    # run clustering
+    cluster_fasta(output_fp, args)
+
+    # create resistance profile for each gene and output new fasta
+    if not args.within_lib and not args.within_abx:
+        create_resistance_profile(output_fp, args)
+
+
+# ----------------------------------------------------------------------------------------------
+# methods
+def split_fasta_file(output_fp, args):
     if args.within_lib:
         if args.protein_fp:
             for line in open(args.protein_fp, 'r'):
@@ -100,15 +115,16 @@ def main():
                 file_out.write(line)
     file_out.close()
 
-    # Run clustering
+def cluster_fasta(output_fp, args):
     for fasta in os.listdir(output_fp):
         if args.protein_fp:
-            command = 'cd-hit -i ' + output_fp + '/' + fasta + ' -o ' + output_fp + '/' + fasta.split('.')[0] + '_unique.faa -c ' + args.percent_id + ' -aS 1.0 -g 1 -d 0'
+            cluster_fp =  output_fp + '/' + fasta.split('.')[0] + '_unique.faa'
+            command = 'cd-hit -i ' + output_fp + '/' + fasta + ' -o ' + cluster_fp + ' -c ' + args.percent_id + ' -aS 1.0 -g 1 -d 0'
         elif args.nucleotide_fp:
-            command = 'cd-hit-est -i ' + output_fp + '/' + fasta + ' -o ' + output_fp + '/' + fasta.split('.')[0] + '_unique.fna -c ' + args.percent_id + ' -aS 1.0 -g 1 -d 0 -r 1'
+            cluster_fp = output_fp + '/' + fasta.split('.')[0] + '_unique.fna'
+            command = 'cd-hit-est -i ' + output_fp + '/' + fasta + ' -o ' + cluster_fp + ' -c ' + args.percent_id + ' -aS 1.0 -g 1 -d 0 -r 1'
         h.run_command(command)
 
-    # Concatenate and get annotation files
     if args.within_lib:
         if args.nucleotide_fp:
             command = 'cat ' + output_fp + '/*_unique.fna > ' + output_fp + '/unique_within_lib_' + args.percent_id + '.fna'
@@ -122,6 +138,51 @@ def main():
             command = 'cat ' + output_fp + '/*_unique.faa > ' + output_fp + '/unique_within_abx_'+ args.percent_id + '.faa'
         h.run_command(command)
             
+
+def create_resistance_profile(output_fp, args):
+    cluster_to_abx = {}
+    gene_to_cluster = {}
+
+    if args.protein_fp:
+        cluster_fp = output_fp + '/all_proteins_unique.faa'
+    else:
+        cluster_fp = output_fp + '/all_nucleotides_unique.fna'
+
+    for gene in open(cluster_fp + ".bak.clstr", 'r'):
+        if gene.rstrip().endswith('%'):
+            [cluster_num, length, gene_id,trash, percent] = gene.rstrip().split()
+        else:
+            [cluster_num, length, gene_id, percent] = gene.rstrip().split()
+
+        gene_to_cluster[gene_id.rstrip('.').strip('>')] = cluster_num
+        abx = parse_mapping.main(args.mapping_fp).abx[gene_id.split('.')[0].strip('>')]
+        if not cluster_num in cluster_to_abx.keys():
+            cluster_to_abx[cluster_num] = []
+        if not abx in cluster_to_abx[cluster_num]:
+            cluster_to_abx[cluster_num].append(abx)
+
+    res_profile = {}
+    updated_records = []
+    for record in SeqIO.parse(args.nucleotide_fp, 'fasta'):
+        
+        profile = ",".join(cluster_to_abx[gene_to_cluster[record.id]])
+        res_profile[record.id] = profile
+
+        record.description = record.description + " abx_profile:" + profile
+        updated_records.append(record)
+
+    if args.protein_fp:
+        output_seqs = output_fp + "/all_proteins_abx_profile.fna"
+        SeqIO.write(updated_records, output_seqs, 'fasta')
+    else:
+        output_seqs = output_fp + "/all_nucleotides_abx_profile.fna"
+        SeqIO.write(updated_records, output_seqs, 'fasta')
+
+    output_map = open(output_fp + "/abx_profile_map.txt", 'w')
+    for gene in res_profile.keys():
+        output_map.write(gene + "\t" + res_profile[gene] + "\n")
+
+
 
 if __name__ == "__main__":
     main()
