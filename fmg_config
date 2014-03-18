@@ -1,4 +1,4 @@
-mgm_model_fp	/home/comp/gdlab/gdlab-shared/software/PARFuMS_software/MetaGeneMark/MetaGeneMark_linux64/MetaGeneMark_v1.mod
+mgm_model_fp	/home/gdlab/shared/old-shared/software/PARFuMS_software/MetaGeneMark/MetaGeneMark_linux64/MetaGeneMark_v1.mod
 resfam_database_fp	/home/gdlab/mgibson/fmg_tools/resfams/ResFams.hmm
 resfam_only_database_fp	/home/gdlab/mgibson/fmg_tools/resfams/ResFams-only.hmm
 pfam_database_fp	/home/gdlab/mgibson/HMMER/hmmdatabases/Pfam/Pfam-A.hmm
