@@ -14,11 +14,13 @@ def main():
  
     # arguments                                                                                                                                                                    
     parser.add_argument('-parfums_fp', dest="parfums_fp", help="Path to directory where PARFuMS assembly is run")
+    parser.add_argument('-sample_ids', dest="sample_ids", help="If provided, will only concatenate these samples")
     parser.add_argument('-o', dest="output", type=argparse.FileType('w'),  help="Output file path")
     args = parser.parse_args()
 
+    samples_to_keep = [line.rstrip() for line in open(args.sample_ids)]
     for file_fp in os.listdir(args.parfums_fp):
-        if os.path.isdir(args.parfums_fp.rstrip('/') + "/" + file_fp):
+        if os.path.isdir(args.parfums_fp.rstrip('/') + "/" + file_fp) and args.sample_ids and file_fp in samples_to_keep:
             sample_name = file_fp
 
             try:

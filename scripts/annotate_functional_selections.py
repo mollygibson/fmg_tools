@@ -30,7 +30,7 @@ def main():
 
     # make sure that you are only using one resfams database
     if args.use_resfams and args.use_resfams_only:
-        parser.exit(status=0, message="You must only use one resfams database\n Check usage with 'annotation_functional_selections.py -h'.\n\n")
+
 
     # set the output path and make the directory
     if args.contig_fp:
@@ -58,8 +58,8 @@ def main():
         merge_hmm_files(output_fp, prefix, args)
 
     # process hmm files further
-    if (not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.final.txt') or args.override) and args.contig_fp:
-        process_hmm_file(output_fp, prefix, args)
+#    if (not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.final.txt') or args.override) and args.contig_fp:
+    process_hmm_file(output_fp, prefix, args)
 
 def call_orfs(contigs, output_fp, prefix, args):    
 
@@ -98,13 +98,26 @@ def call_orfs(contigs, output_fp, prefix, args):
                         break
             headerPieces = sequenceHeader.split('\t')
 
+            
             sample_name = headerPieces[0].split("_Contig_")[0]
-            contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
-            mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
-            length = headerPieces[0].split("_Len:")[1]
+
+            if len(headerPieces[0].split("_Contig_")) > 1:
+                contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
+            else:
+                contig_num = "NA"
+
+            if len(headerPieces[0].split("_Mean:")) > 1:
+                mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
+            else:
+                mean = "NA"
+
+            if len(headerPieces[0].split("_Len:")) > 1:
+                length = headerPieces[0].split("_Len:")[1]
+            else:
+                length = "NA"
 
             if args.mapping_fp:
-                newHeader = ">" + sample_name + "." + contig_num + ":" +  headerPieces[3] + "-" + headerPieces[4] + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + contig_num + "-" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
+                newHeader = ">" + sample_name + "." + contig_num + ":" +  headerPieces[3] + "-" + headerPieces[4] + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
             else:
                 newHeader = ">" + sample_name + "." + contig_num + ":" + headerPieces[3] + "-" + headerPieces[4] + " ID:" + sample_name + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:NA" + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
             finalNuc.write(newHeader + "\n")
@@ -132,9 +145,21 @@ def call_orfs(contigs, output_fp, prefix, args):
             headerPieces = sequenceHeader.split('\t')
 
             sample_name = headerPieces[0].split("_Contig_")[0]
-            contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
-            mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
-            length = headerPieces[0].split("_Len:")[1]
+
+            if len(headerPieces[0].split("_Contig_")) >1:
+                contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
+            else:
+                contig_num = "NA"
+
+            if len(headerPieces[0].split("_Mean:")) > 1:
+                mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
+            else:
+                mean = "NA"
+
+            if len(headerPieces[0].split("_Len:")) > 1:
+                length = headerPieces[0].split("_Len:")[1]
+            else:
+                length = "NA"
 
             if args.mapping_fp:
                 newHeader = ">" + sample_name + "." + contig_num +  ":" + headerPieces[3] + "-" + headerPieces[4] + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] + " start:" + headerPieces[3] + " stop:" + headerPieces[4] + " orientation:" + headerPieces[6]
@@ -257,18 +282,35 @@ def merge_hmm_files(output_fp, prefix, args):
 def process_hmm_file(output_fp, prefix, args):
     hmm_annotations = open(output_fp + '/' + prefix + '.HMMAnnotation.txt', 'r')
     output = open(output_fp + '/' + prefix + '.HMMAnnotation.final.txt', 'w')
+    tab_file = open(output_fp + '/' + prefix + '.HMMAnnotation.tab', 'w')
+
+    tab_file.write("index\tcontig\tstart\tstop\tori\tdatabase\tanno_id\tdescription\teval\tbit_score\n")
 
     save_contig_name = ""
     no_annotation = False
     for line in hmm_annotations:
         if line.startswith(">"):
-            sample_name = line.split("_Contig_")[0].strip(">")
-            contig_num = line.split("_Contig_")[1].split("_")[0]
-            mean = line.split("_Mean:")[1].split("_")[0]
-            length = line.split("_Len:")[1].split("_")[0].rstrip()
-            start = line.split("_Len:")[1].split("_")[1].rstrip()
-            stop = line.split("_Len:")[1].split("_")[2].rstrip()
-            ori = line.split("_Len:")[1].split("_")[3].rstrip()
+            sample_name = headerPieces[0].split("_Contig_")[0]
+
+            if len(headerPieces[0].split("_Contig_")) > 1:
+                contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
+            else:
+                contig_num = "NA"
+
+            if len(headerPieces[0].split("_Mean:")) > 1:
+                mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
+            else:
+                mean = "NA"
+
+            if len(headerPieces[0].split("_Len:")) > 1:
+                length = headerPieces[0].split("_Len:")[1]
+            else:
+                length = "NA"            
+
+            start = line.split("_")[len(line.split("_"))-3]
+            stop = line.split("_")[len(line.split("_"))-2]
+            ori = line.split("_")[len(line.split("_"))-1]
+
             if args.mapping_fp:                                                                                                                                                                                                             
                 contig_name = ">" + sample_name + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] 
             else:
@@ -283,8 +325,11 @@ def process_hmm_file(output_fp, prefix, args):
                 output.write("\t\tMetaGeneMark\n")
                 no_annotation = True
             output.write("\t" + line)
+
+            start_stop = line.rstrip()
         else:
             output.write("\t\t" + line)
+            tab_file.write(contig_name.split()[0].rstrip().strip('>') + "\t" + contig_name + "\t" + start_stop + line)
             no_annotation = False
 
 
