@@ -145,8 +145,10 @@ def create_resistance_profile(output_fp, args):
 
     if args.protein_fp:
         cluster_fp = output_fp + '/all_proteins_unique.faa'
+        all_orfs_fp = output_fp + '/all_proteins.faa'
     else:
         cluster_fp = output_fp + '/all_nucleotides_unique.fna'
+        all_orfs_fp = output_fp + '/all_nucleotides.fna'
 
     for gene in open(cluster_fp + ".bak.clstr", 'r'):
         if gene.rstrip().endswith('%'):
@@ -163,7 +165,7 @@ def create_resistance_profile(output_fp, args):
 
     res_profile = {}
     updated_records = []
-    for record in SeqIO.parse(args.nucleotide_fp, 'fasta'):
+    for record in SeqIO.parse(all_orfs_fp, 'fasta'):
         
         profile = ",".join(cluster_to_abx[gene_to_cluster[record.id]])
         res_profile[record.id] = profile
@@ -179,6 +181,7 @@ def create_resistance_profile(output_fp, args):
         SeqIO.write(updated_records, output_seqs, 'fasta')
 
     output_map = open(output_fp + "/abx_profile_map.txt", 'w')
+    output_map.write("orf_name\tres_profile\n")
     for gene in res_profile.keys():
         output_map.write(gene + "\t" + res_profile[gene] + "\n")
 
