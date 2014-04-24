@@ -21,6 +21,7 @@ def main():
     parser.add_argument('-o', dest="output_fp", help="Path to output directory")
     parser.add_argument('-f', dest="override", help="Force override otuput directory", action="store_true", default=False)
     parser.add_argument('-min', dest="min_len", help="Minimum length of contig to retain")
+    parser.add_argument('-annotations', dest="annotations_fp", help="Filter out annotations that are redundant as well")
     args = parser.parse_args()
     
     # check to see that either nucleotides or proteins are provided
@@ -92,8 +93,14 @@ def main():
                     file_out.write(line)
     else:
         file_out = open(output_fp + "/contigs_updated.fna", 'a')
+        save_header=""
         for line in open(args.contig_fp, 'r'):
-            file_out.write(line)
+            if line.startswith('>'):
+                save_header = line.rstrip()
+            else:
+                if len(line) >= int(args.min_len):
+                    file_out.write(save_header + "\n")
+                    file_out.write(line)
     file_out.close()
 
     # Run clustering
@@ -103,13 +110,35 @@ def main():
 
     # Concatenate and get annotation files
     if args.within_lib:
+        output_contigs = output_fp + '/unique_within_lib_' + args.percent_id + '.fna'
         command = 'cat ' + output_fp + '/*_unique.fna > ' + output_fp + '/unique_within_lib_' + args.percent_id + '.fna'
     elif  args.within_abx:
+        output_contigs = output_fp + '/unique_within_abx_'+ args.percent_id + '.fna'
         command = 'cat ' + output_fp + '/*_unique.fna > ' + output_fp + '/unique_within_abx_'+ args.percent_id + '.fna'
     else:
+        output_contigs = output_fp + '/all_unique_'+ args.percent_id + '.fna'
         command = 'cat ' + output_fp + '/*_unique.fna > ' + output_fp + '/all_unique_'+ args.percent_id + '.fna'
 
     subprocess.call(command, shell=True)
+
+    # Filter annotations
+    if args.annotations_fp:
+        save_contig = []
+        for line in open(output_contigs):
+            if line.startswith('>'):
+                save_contig.append(line.rstrip())
+        print save_contig
+
+        output_anno = open(output_fp + '/unique_annotations.tab', 'w')
+        first = True
+        for line in open(args.annotations_fp):
+            if first:
+                output_anno.write(line)
+                first = False
+            else:
+                if line.rstrip() in save_contig:
+                    output_anno.write(line)
+            
 
 if __name__ == "__main__":
     main()

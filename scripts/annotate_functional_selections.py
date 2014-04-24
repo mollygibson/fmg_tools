@@ -30,7 +30,7 @@ def main():
 
     # make sure that you are only using one resfams database
     if args.use_resfams and args.use_resfams_only:
-
+        parser.exit(status=0, message="You can only use one resfams database.\nCheck usage with 'annotate_functional_selections.py -h'.\n\n")
 
     # set the output path and make the directory
     if args.contig_fp:
@@ -290,6 +290,7 @@ def process_hmm_file(output_fp, prefix, args):
     no_annotation = False
     for line in hmm_annotations:
         if line.startswith(">"):
+            headerPieces = line.strip(">").split("\t")
             sample_name = headerPieces[0].split("_Contig_")[0]
 
             if len(headerPieces[0].split("_Contig_")) > 1:

@@ -12,8 +12,9 @@ import pandas
 import parse_config, parse_mapping
 
 def main():
-    parser = argparse.ArgumentParser(description="This script takes in functional metagenomic contigs, and forward and reverse reads and rarifies them to a certain read depth, and then maps the reads back to the contigs and calcualtes average coverage")
+    parser = argparse.ArgumentParser(description="This script takes in functional metagenomic contigs (or proteins), and forward and reverse reads and rarifies them to a certain read depth, and then maps the reads back to the contigs and calcualtes average coverage.")
     parser.add_argument('-contigs', dest="contig_fp", help="Path to collapsed contig file")
+    parser.add_argument('-proteins', dest="protein_fp", help="Path to proteins file")
     parser.add_argument('-for_pair', dest="forward_fp", help="Path to quality filtered forward reads paired")
     parser.add_argument('-rev_pair', dest="reverse_fp", help="Path to quality filetered reverse reads paired")
     parser.add_argument('-unpair', dest="unpaired_fp", help="Path to quality filtered reads not paired")
@@ -27,6 +28,10 @@ def main():
         cmd = "mkdir " + args.output_fp
         run_command(cmd)
 
+    if args.contig_fp:
+        alignment_fp = args.contig_fp
+    elif args.protein_fp:
+        alignment_fp = args.protein_fp
 
     forward_paired_q_fp = args.output_fp + "/forward_quality_paired_" + str(args.paired_levl) + ".fastq"
     reverse_paired_q_fp= args.output_fp + "/reverse_quality_paired_" + str(args.paired_levl) +".fastq"
@@ -64,14 +69,20 @@ def main():
         SeqIO.write(rare_unpaired_reads, unpaired_q_fp, "fastq")
                            
     # Align all of your reads to the contigs
-    index = os.path.splitext(args.contig_fp)[0]
+    index = os.path.splitext(alignment_fp)[0]
     sam_unpaired_fp = args.output_fp + "/unpaired.sam"
     if not os.path.exists(sam_unpaired_fp):
-        cmd = "bowtie2 -x " + index + " -U " + unpaired_q_fp + " -S " + sam_unpaired_fp + " --score-min L,0,-0.17 -a"
+        if args.contig_fp:
+            cmd = "bowtie2 -x " + index + " -U " + unpaired_q_fp + " -S " + sam_unpaired_fp + " --score-min L,0,-0.17 -a"
+        elif args.protein_fp:
+            cmd = "bowtie2 -x " + index + " -U " + unpaired_q_fp + " -S " + sam_unpaired_fp + " --score-min L,0,-0.17"
         run_command(cmd)
     sam_paired_fp = args.output_fp + "/paired.sam"
     if not os.path.exists(sam_paired_fp):
-        cmd = "bowtie2 -x " + index + " -1 " + forward_paired_q_fp + " -2 " + reverse_paired_q_fp + " -S " + sam_paired_fp + " --score-min L,0,-0.17 -I 250 -X 500 --no-discordant --no-contain -a"
+        if args.contig_fp:
+            cmd = "bowtie2 -x " + index + " -1 " + forward_paired_q_fp + " -2 " + reverse_paired_q_fp + " -S " + sam_paired_fp + " --score-min L,0,-0.17 -I 250 -X 500 --no-discordant --no-contain -a"
+        elif args.protein_fp:
+            cmd = "bowtie2 -x " + index + " -1 " + forward_paired_q_fp + " -2 " + reverse_paired_q_fp + " -S " + sam_paired_fp + " --score-min L,0,-0.17 -I 250 -X 500 --no-discordant --no-contain"
         run_command(cmd)
 
     # Create pileups using samtools
@@ -91,18 +102,18 @@ def main():
 
     pileup_file_unpaired = args.output_fp + "/unpaired_" + str(args.unpaired_levl) +".pileup"
     if not os.path.exists(pileup_file_unpaired):
-        cmd = "samtools mpileup -f " + args.contig_fp + " " + sort_bam_unpaired_fp + ".bam > " + pileup_file_unpaired
+        cmd = "samtools mpileup -f " + alignment_fp + " " + sort_bam_unpaired_fp + ".bam > " + pileup_file_unpaired
         run_command(cmd)
 
     pileup_file_paired = args.output_fp + "/paired_" + str(args.paired_levl) +".pileup"
     if not os.path.exists(pileup_file_paired):
-        cmd = "samtools mpileup -f " + args.contig_fp + " " + sort_bam_paired_fp + ".bam > " + pileup_file_paired
+        cmd = "samtools mpileup -f " + alignment_fp + " " + sort_bam_paired_fp + ".bam > " + pileup_file_paired
         run_command(cmd)
 
     coverage_file = args.output_fp + "/coverage.txt"
     percent_coverage_file = args.output_fp + "/percent_coverage_by_contig.txt"
 #    if not os.path.exists(coverage_file):
-    [ave_cov, perc_cov_base,total_base_by_contig,per_cov_contigs,ave_cov_contigs] = calculate_average_coverage(pileup_file_paired, pileup_file_unpaired, args.contig_fp)
+    [ave_cov, perc_cov_base,total_base_by_contig,per_cov_contigs,ave_cov_contigs] = calculate_average_coverage(pileup_file_paired, pileup_file_unpaired, alignment_fp)
     total_reads = int(args.paired_levl) + int(args.unpaired_levl)
 
     output = open(coverage_file, 'w')

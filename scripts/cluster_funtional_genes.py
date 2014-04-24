@@ -27,11 +27,14 @@ def main():
     
     # check to see that either nucleotides or proteins are provided
     if not args.nucleotide_fp and not args.protein_fp:
-        parser.exit(status=0, message="You must provide either nucleotides or proteins to collapse. \n Check usage with 'collapse_redundant_genes.py -h'.\n\n")
+        parser.exit(status=0, message="You must provide either nucleotides or proteins to collapse. \n Check usage with 'cluster_genes.py -h'.\n\n")
 
     if args.within_lib and args.within_abx:
         parser.exit(status=0, message="You can only collapse on either library OR antibiotic selection. If you would like to collapse the entire \
-                          functional selection, don't provide either flag. \n Check usage with 'collapse_redundant_genes.py -h'.\n\n")
+                          functional selection, don't provide either flag. \n Check usage with 'cluster_functional_genes.py -h'.\n\n")
+
+    if (args.within_lib or args.within_abx) and not args.mapping_fp:
+        parser.exit(status=0, meassage="You need a mapping file if collaping within library or antibiotic. \n Check usage with 'cluster_functional_genes.py -h. \n\n")
 
     # determine the output directory if it isn't given
     if not args.output_fp:
@@ -60,7 +63,7 @@ def main():
             subprocess.call('mkdir ' + output_fp, shell=True)
         else:
             parser.exit(status=0, message="If you want to override the output directory use the -f flag. \n Check usage with \
-                          'collapse_redundant_genes.py -h'. \n\n")
+                          'cluster_functional_genes.py -h'. \n\n")
     else:
         subprocess.call('mkdir ' + output_fp, shell=True)
 
@@ -71,7 +74,7 @@ def main():
     cluster_fasta(output_fp, args)
 
     # create resistance profile for each gene and output new fasta
-    if not args.within_lib and not args.within_abx:
+    if not args.within_lib and not args.within_abx and args.mapping_fp:
         create_resistance_profile(output_fp, args)
 
 
