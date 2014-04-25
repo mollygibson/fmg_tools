@@ -218,7 +218,6 @@ def merge_hmm_files(output_fp, prefix, args):
     contigs = open(output_fp + '/contig_names.txt', 'r') 
 
     for line in contigs:
-        print line
         pfam.seek(0)
         tigrfam.seek(0)
         resfams.seek(0)
@@ -228,7 +227,6 @@ def merge_hmm_files(output_fp, prefix, args):
         # Process Pfam File                                                                                                                                                                                                            
         for item in pfam:
             if contig in item:
-                print contig
                 pieces = item.rstrip().split()
                 description = pieces[18]
                 if len(pieces) > 19:
@@ -261,7 +259,6 @@ def merge_hmm_files(output_fp, prefix, args):
         final_list = []
         for item in hits:
             pieces = item[2].split('_')
-            print pieces
             start = pieces[len(pieces)-3]
             stop = pieces[len(pieces)-2]
             final_list.append([start, stop, item[0], item[1], item[10], item[4], item[5]])
