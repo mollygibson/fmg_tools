@@ -54,8 +54,8 @@ def main():
     annotation_fp = annotate_proteins(protein_fp, output_fp, args)
     
     # merge hmm files
-    if (not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.txt') or args.override) and args.contig_fp:
-        merge_hmm_files(output_fp, prefix, args)
+#    if (not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.txt') or args.override) and args.contig_fp:
+    merge_hmm_files(output_fp, prefix, args)
 
     # process hmm files further
 #    if (not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.final.txt') or args.override) and args.contig_fp:
@@ -281,27 +281,27 @@ def process_hmm_file(output_fp, prefix, args):
     output = open(output_fp + '/' + prefix + '.HMMAnnotation.final.txt', 'w')
     tab_file = open(output_fp + '/' + prefix + '.HMMAnnotation.tab', 'w')
 
-    tab_file.write("index\tcontig\tstart\tstop\tori\tdatabase\tanno_id\tdescription\teval\tbit_score\n")
+    tab_file.write("index\tcontig\tcontig_num\tstart\tstop\tori\tdatabase\tanno_id\tdescription\teval\tbit_score\n")
 
     save_contig_name = ""
     no_annotation = False
     for line in hmm_annotations:
         if line.startswith(">"):
             headerPieces = line.strip(">").split("\t")
-            sample_name = headerPieces[0].split("_Contig_")[0]
+            sample_name = headerPieces[0].split("_Contig_")[0].rstrip()
 
             if len(headerPieces[0].split("_Contig_")) > 1:
-                contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0]
+                contig_num = headerPieces[0].split("_Contig_")[1].split("_")[0].rstrip()
             else:
                 contig_num = "NA"
 
             if len(headerPieces[0].split("_Mean:")) > 1:
-                mean = headerPieces[0].split("_Mean:")[1].split("_")[0]
+                mean = headerPieces[0].split("_Mean:")[1].split("_")[0].rstrip()
             else:
                 mean = "NA"
 
             if len(headerPieces[0].split("_Len:")) > 1:
-                length = headerPieces[0].split("_Len:")[1]
+                length = headerPieces[0].split("_Len:")[1].rstrip()
             else:
                 length = "NA"            
 
@@ -327,7 +327,7 @@ def process_hmm_file(output_fp, prefix, args):
             start_stop = line.rstrip()
         else:
             output.write("\t\t" + line)
-            tab_file.write(contig_name.split()[0].rstrip().strip('>') + "\t" + contig_name + "\t" + start_stop + line)
+            tab_file.write(contig_name.split()[0].rstrip().strip('>') + "\t" + contig_name + "\t" + "\t" + contig_num + "\t" + start_stop + line)
             no_annotation = False
 
 

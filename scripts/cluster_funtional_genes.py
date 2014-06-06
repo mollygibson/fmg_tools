@@ -29,15 +29,16 @@ def main():
     if not args.nucleotide_fp and not args.protein_fp:
         parser.exit(status=0, message="You must provide either nucleotides or proteins to collapse. \n Check usage with 'cluster_genes.py -h'.\n\n")
 
-    if args.within_lib and args.within_abx:
-        parser.exit(status=0, message="You can only collapse on either library OR antibiotic selection. If you would like to collapse the entire \
-                          functional selection, don't provide either flag. \n Check usage with 'cluster_functional_genes.py -h'.\n\n")
-
     if (args.within_lib or args.within_abx) and not args.mapping_fp:
         parser.exit(status=0, meassage="You need a mapping file if collaping within library or antibiotic. \n Check usage with 'cluster_functional_genes.py -h. \n\n")
 
     # determine the output directory if it isn't given
     if not args.output_fp:
+        if args.within_lib and args.within_abx:
+            if args.nucleotide_fp:
+                output_fp = 'collapsed_nuc_lib-abx_' + str(args.percent_id)
+            else:
+                output_fp = 'collapse_prot_lib-abx_' + str(args.percent_id)
         if args.within_lib:
             if args.nucleotide_fp:
                 output_fp = 'collapsed_nuc_lib_' + str(args.percent_id)
@@ -77,11 +78,28 @@ def main():
     if not args.within_lib and not args.within_abx and args.mapping_fp:
         create_resistance_profile(output_fp, args)
 
+    summarize_output(output_fp, args)
+
 
 # ----------------------------------------------------------------------------------------------
 # methods
 def split_fasta_file(output_fp, args):
-    if args.within_lib:
+    if args.within_lib and args.within_abx:
+        if args.protein_fp:
+            for line in open(args.protein_fp, 'r'):
+                if line.startswith('>'):
+                    library = line.split()[1].split(":")[1]
+                    abx = line.split()[5].split(":")[1]
+                    file_out = open(output_fp + "/" + library + "-" + abx + ".faa", 'a')
+                file_out.write(line)
+        else:
+            for line in open(args.nucleotide_fp, 'r'):
+                if line.startswith('>'):
+                    library = line.split()[1].split(":")[1]
+                    abx = line.split()[5].split(":")[1]
+                    file_out = open(output_fp + "/" + library + "-" +  ".fna", 'a')
+                file_out.write(line)
+    elif args.within_lib:
         if args.protein_fp:
             for line in open(args.protein_fp, 'r'):
                 if line.startswith('>'):
@@ -120,15 +138,22 @@ def split_fasta_file(output_fp, args):
 
 def cluster_fasta(output_fp, args):
     for fasta in os.listdir(output_fp):
+        basename = os.path.splitext(os.path.basename(fasta))[0]
         if args.protein_fp:
-            cluster_fp =  output_fp + '/' + fasta.split('.')[0] + '_unique.faa'
+            cluster_fp =  output_fp + '/' + basename + '_unique.faa'
             command = 'cd-hit -i ' + output_fp + '/' + fasta + ' -o ' + cluster_fp + ' -c ' + args.percent_id + ' -aS 1.0 -g 1 -d 0'
         elif args.nucleotide_fp:
-            cluster_fp = output_fp + '/' + fasta.split('.')[0] + '_unique.fna'
+            cluster_fp = output_fp + '/' + basename + '_unique.fna'
             command = 'cd-hit-est -i ' + output_fp + '/' + fasta + ' -o ' + cluster_fp + ' -c ' + args.percent_id + ' -aS 1.0 -g 1 -d 0 -r 1'
         h.run_command(command)
 
-    if args.within_lib:
+    if args.within_lib and args.within_abx:
+        if args.nucleotide_fp:
+            command = 'cat ' + output_fp + '/*_unique.fna > ' + output_fp + '/unique_within_lib-abx_' + args.percent_id + '.fna'
+        else:
+            command = 'cat ' + output_fp + '/*_unique.faa > ' + output_fp + '/unique_within_lib-abx_'+ args.percent_id + '.faa'
+            h.run_command(command)
+    elif args.within_lib:
         if args.nucleotide_fp:
             command = 'cat ' + output_fp + '/*_unique.fna > ' + output_fp + '/unique_within_lib_' + args.percent_id + '.fna'
         else:
@@ -187,6 +212,14 @@ def create_resistance_profile(output_fp, args):
     output_map.write("orf_name\tres_profile\n")
     for gene in res_profile.keys():
         output_map.write(gene + "\t" + res_profile[gene] + "\n")
+
+def summarize_output(output_fp, args):
+    output_file = open(output_fp + "/gene_summary.txt", 'w')
+    for fasta_file in os.listdir(output_fp):
+        if fasta_file.endswith("_unique.faa"):
+            sequences = list(SeqIO.parse(output_fp + "/" + fasta_file, "fasta"))
+            
+            output_file.write(fasta_file + "\t" + str(len(sequences)) + "\n")
 
 
 

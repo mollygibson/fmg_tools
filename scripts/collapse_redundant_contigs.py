@@ -57,6 +57,12 @@ def main():
     else:
         subprocess.call('mkdir ' + output_fp, shell=True)
 
+    # set min_len
+    if args.min_len:
+        min_len = args.min_len
+    else:
+        min_len = 0
+
     # Split the files
     if args.within_lib:
         for line in open(args.contig_fp, 'r'):
@@ -66,12 +72,18 @@ def main():
 
                 sample_name = line.split("_Contig_")[0].strip(">").rstrip()
                 contig_num = line.split("_Contig_")[1].split("_")[0].rstrip()
-                mean = line.split("_Mean:")[1].split("_")[0].rstrip()
-                length = line.split("_Len:")[1].rstrip()
+                if len(line.split("_Mean:")) > 1:
+                    mean = line.split("_Mean:")[1].split("_")[0].rstrip()
+                else:
+                    mean = "NA"
+                if len(line.split("_Len:")) > 1:
+                    length = line.split("_Len:")[1].rstrip()
+                else:
+                    length = "NA"
                 newHeader = ">" + sample_name + "_" + contig_num +" ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] 
                 file_out.write(newHeader + "\n")
             else:
-                if len(line) >= int(args.min_len):
+                if len(line) >= int(min_len):
                     file_out.write(newHeader + "\n")
                     file_out.write(line)
     elif args.within_abx:
@@ -82,13 +94,20 @@ def main():
                 
                 sample_name = line.split("_Contig_")[0].strip(">").rstrip()
                 contig_num = line.split("_Contig_")[1].split("_")[0].rstrip()
-                mean = line.split("_Mean:")[1].split("_")[0].rstrip()
-                length = line.split("_Len:")[1].rstrip()
+
+                if len(line.split("_Mean:")) > 1:
+                        mean = line.split("_Mean:")[1].split("_")[0].rstrip()
+                else:
+                    mean = "NA"
+                if len(line.split("_Len:")) > 1:
+                    length = line.split("_Len:")[1].rstrip()
+                else:
+                    length = "NA"
                 newHeader = ">" + sample_name + "+" + contig_num + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name]
 
                 file_out.write(newHeader + "\n")
             else:
-                if len(line) >= int(args.min_len):
+                if len(line) >= int(min_len):
                     file_out.write(newHeader + "\n")
                     file_out.write(line)
     else:
@@ -98,7 +117,7 @@ def main():
             if line.startswith('>'):
                 save_header = line.rstrip()
             else:
-                if len(line) >= int(args.min_len):
+                if len(line) >= int(min_len):
                     file_out.write(save_header + "\n")
                     file_out.write(line)
     file_out.close()

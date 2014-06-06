@@ -18,11 +18,20 @@ def main():
     # arguments
     parser.add_argument('-i', dest="input_fp", help="Input matrix")
     parser.add_argument('-o', dest="output_fp", help="Output matrix")
+    parser.add_argument('-reverse', dest="reverse", action="store_true", help="Reverse pivot table")
     args = parser.parse_args()
     
-    in_table = pandas.io.parsers.read_table(args.input_fp, index_col=0)
-    unstaked = in_table.unstack()
-    unstaked.to_csv(args.output_fp, sep="\t")
+    if args.reverse:
+        in_table = pandas.io.parsers.read_table(args.input_fp, index_col=0)
+        unstaked = in_table.unstack()
+        unstaked.to_csv(args.output_fp, sep="\t")
+    else:
+        in_table = pandas.io.parsers.read_table(args.input_fp, header=False)
+        in_table.columns = ("rows", "columns", "values")
+        stacked = in_table.pivot(index='rows', columns='columns', values='values')
+        final = stacked.fillna(value=0)
+        final.to_csv(args.output_fp, sep="\t")
+        
 
 if __name__ == "__main__":
     main()
