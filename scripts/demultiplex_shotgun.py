@@ -44,7 +44,7 @@ def main():
         reverse_files[sample_id] = open(args.output_fp + "/Reverse_" + sample_id + ".fastq", 'a')
 
     forward_files["unknown"] = open(args.output_fp + "/Forward_unknown.fastq", 'a')
-    reverse_files["unknown"] = open(args.output_fp + "/Reverse_unkonwn.fastq", 'a')
+    reverse_files["unknown"] = open(args.output_fp + "/Reverse_unknown.fastq", 'a')
 
     # read counters
     total_reads = 0
