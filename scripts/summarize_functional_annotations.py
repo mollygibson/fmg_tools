@@ -24,24 +24,28 @@ def main():
 
     # import annotations and extract library and antibiotic information
     annotations = pandas.io.parsers.read_table(args.annotation_fp)
-    extraction = annotations.contig.str.extract('.*ID:(?P<library>[^ ]*) Contig:(?P<contig_num>\d*) .* Len:(?P<contig_len>\d*) abx:(?P<antibiotic>[^ ]*).*')
+    extraction = annotations['contig'].str.extract('.*ID:(?P<library>[^ ]*) Contig:(?P<contig_num>\d*) .* Len:(?P<contig_len>\d*).*abx:(?P<antibiotic>[^ ]*).*')
     annotations = pandas.merge(annotations,extraction,on=annotations.index,how='outer')
     annotations['gene_len'] = annotations['stop'].astype(float) - annotations['start'].astype(float)
 
+
     # analyze contig information
-    [contigs_by_library, contigs_by_abx, contig_dist] = count_unique_contigs(annotations)
+    [contigs_by_library, contigs_by_abx, contigs_by_lib_abx, contig_dist] = count_unique_contigs(annotations)
     contigs_by_library.to_csv(args.output_fp + "/contigs_by_library.txt", sep="\t")
     contigs_by_abx.to_csv(args.output_fp + "/contigs_by_abx.txt", sep="\t")
+    contigs_by_lib_abx.to_csv(args.output_fp + "/contigs_by_lib_abx.txt", sep="\t")
     contig_dist.to_csv(args.output_fp + "/contig_dist.txt", sep="\t")
 
     # analyze gene information (all greater than 300bp)
-    [gene_by_lib, gene_by_abx, res_gene_by_lib, res_gene_by_abx] = count_unique_genes(annotations)
+    [gene_by_lib, gene_by_abx,gene_by_lib_abx, res_gene_by_lib, res_gene_by_abx, res_gene_by_lib_abx] = count_unique_genes(annotations)
     gene_by_lib.to_csv(args.output_fp + "/genes_by_lib.txt", sep="\t")
     gene_by_abx.to_csv(args.output_fp + "/genes_by_abx.txt", sep="\t")
+    gene_by_lib_abx.to_csv(args.output_fp + "/genes_by_lib_abx.txt", sep="\t")
     res_gene_by_lib.to_csv(args.output_fp + "/res_gene_by_lib.txt", sep="\t")
     res_gene_by_abx.to_csv(args.output_fp + "/res_gene_by_abx.txt", sep="\t")
+    res_gene_by_lib_abx.to_csv(args.output_fp + "/res_gene_by_lib_abx.txt", sep="\t")
     
-    # make annotation table
+   # make annotation table
     annotation_table = make_annotation_table(annotations)
     annotation_table.to_csv(args.output_fp + "/annotation_table.txt", sep="\t")
 
@@ -103,20 +107,24 @@ def make_annotation_table(annotations):
 
 def count_unique_genes(annotations):
     # filter to top hits
-    top_hits = annotations[annotations.gene_len>300].groupby(['contig', 'start', 'stop'], as_index=False).first()
+    top_hits = annotations.groupby(['contig', 'start', 'stop'], as_index=False).first()
 
     unique_by_lib = pandas.DataFrame(top_hits.groupby('library').size())
     unique_by_abx = pandas.DataFrame(top_hits.groupby('antibiotic').size())
+    unique_by_lib_abx = pandas.DataFrame(top_hits.groupby(['library','antibiotic']).size())
 
-    res_top_hits = top_hits[top_hits.database == "ResFam"]
+    res_genes = annotations[annotations.database == "ResFam"]
+    res_top_hits = res_genes.groupby(['contig', 'start', 'stop'], as_index=False).first()
 
     res_unique_by_lib = pandas.DataFrame(res_top_hits.groupby('library').size())
     res_unique_by_abx = pandas.DataFrame(res_top_hits.groupby('antibiotic').size())
+    res_unique_by_lib_abx = pandas.DataFrame(res_top_hits.groupby(['library','antibiotic']).size())
     
-    return [unique_by_lib, unique_by_abx, res_unique_by_lib, res_unique_by_abx]
+    return [unique_by_lib, unique_by_abx, unique_by_lib_abx, res_unique_by_lib, res_unique_by_abx, res_unique_by_lib_abx]
 
 
 def count_unique_contigs(annotations):
+    # unique contigs by library
     unique_by_lib = pandas.DataFrame(annotations.groupby('library').contig.nunique())
 
     annotations['contig_len'] = annotations['contig_len'].astype(float)
@@ -126,6 +134,20 @@ def count_unique_contigs(annotations):
     contigs_by_library = pandas.merge(unique_by_lib,unique_by_lib_large, on=unique_by_lib.index, how='outer')
     contigs_by_library.columns= ['library', 'total', 'total_greater_500']
 
+    # unique contigs by library and antibiotic
+    unique_by_lib_abx = pandas.DataFrame(annotations.groupby(['library','antibiotic']).contig.nunique())
+    unique_by_lib_abx = unique_by_lib_abx.reset_index()
+
+    annotations['contig_len'] = annotations['contig_len'].astype(float)
+    large_contigs = annotations[annotations.contig_len>500]
+    unique_by_lib_abx_large = pandas.DataFrame(large_contigs.groupby(['library','antibiotic']).contig.nunique())
+    unique_by_lib_abx_large = unique_by_lib_abx_large.reset_index()
+
+    contigs_by_lib_abx = pandas.merge(unique_by_lib_abx,unique_by_lib_abx_large, on=unique_by_lib_abx.index, how='outer')
+    contigs_by_lib_abx = contigs_by_lib_abx[['library_x', 'antibiotic_x', '0_x', '0_y']]
+    contigs_by_lib_abx.columns= ['library', 'antibiotic','total', 'total_greater_500']
+
+    # unique contigs by antibiotic
     unique_by_abx = pandas.DataFrame(annotations.groupby('antibiotic').contig.nunique())
 
     annotations['contig_len'] =annotations['contig_len'].astype(float)
@@ -138,7 +160,7 @@ def count_unique_contigs(annotations):
     grouped  = annotations.groupby('library')
     contig_stats = grouped['contig_len'].agg([np.mean, np.std])
 
-    return [contigs_by_library, contigs_by_abx, contig_stats]
+    return [contigs_by_library, contigs_by_abx, contigs_by_lib_abx, contig_stats]
 
 
 

@@ -23,15 +23,15 @@ def main():
 
     filtered_df = pandas.DataFrame()
     if args.ano_tab_fp:
-        annotations = pandas.io.parsers.read_csv(args.ano_tab_fp, sep="\t")
+        annotations = pandas.io.parsers.read_csv(args.ano_tab_fp, sep="\t", index_col=None)
         for index, row in annotations.iterrows():
             contig_pieces = row['contig'].split()
             protein = contig_pieces[0] + "." + contig_pieces[2].split(":")[1] + ":" + str(row['start']) + "-" + str(row['stop'])
             
             if protein in proteins_to_keep:
                 filtered_df = filtered_df.append(row)
-            else:
-                print row['contig'] + "\t" + str(row['start']) + "\t" + str(row['stop'])
+#            else:
+#                print row['contig'] + "\t" + str(row['start']) + "\t" + str(row['stop'])
 
     filtered_df.to_csv(args.output_fp, sep="\t")
 

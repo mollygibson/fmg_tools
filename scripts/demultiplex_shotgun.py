@@ -120,7 +120,7 @@ def main():
             else:
                 dist_out.write(barcode + "\t" + map_dict_mid6[barcode] + "\t0\n")
 
-        dist_out.write("total_reads\t\t" + total_reads + "\n")
+        dist_out.write("total_reads\t\t" + str(total_reads) + "\n")
 
 if __name__ == "__main__":
     main()

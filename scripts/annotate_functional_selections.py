@@ -281,7 +281,7 @@ def process_hmm_file(output_fp, prefix, args):
     output = open(output_fp + '/' + prefix + '.HMMAnnotation.final.txt', 'w')
     tab_file = open(output_fp + '/' + prefix + '.HMMAnnotation.tab', 'w')
 
-    tab_file.write("index\tcontig\tcontig_num\tstart\tstop\tori\tdatabase\tanno_id\tdescription\teval\tbit_score\n")
+    tab_file.write("sample\tcontig\tcontig_num\tstart\tstop\tori\tdatabase\tanno_id\tdescription\teval\tbit_score\n")
 
     save_contig_name = ""
     no_annotation = False
@@ -327,7 +327,7 @@ def process_hmm_file(output_fp, prefix, args):
             start_stop = line.rstrip()
         else:
             output.write("\t\t" + line)
-            tab_file.write(contig_name.split()[0].rstrip().strip('>') + "\t" + contig_name + "\t" + "\t" + contig_num + "\t" + start_stop + line)
+            tab_file.write(contig_name.split()[0].rstrip().strip('>') + "\t" + contig_name + "\t" + contig_num + "\t" + start_stop + line)
             no_annotation = False
 
 

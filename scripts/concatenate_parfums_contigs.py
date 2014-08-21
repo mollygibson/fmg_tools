@@ -18,9 +18,11 @@ def main():
     parser.add_argument('-o', dest="output", type=argparse.FileType('w'),  help="Output file path")
     args = parser.parse_args()
 
-    samples_to_keep = [line.rstrip() for line in open(args.sample_ids)]
+    if args.sample_ids:
+        samples_to_keep = [line.rstrip() for line in open(args.sample_ids)]
+
     for file_fp in os.listdir(args.parfums_fp):
-        if os.path.isdir(args.parfums_fp.rstrip('/') + "/" + file_fp) and args.sample_ids and file_fp in samples_to_keep:
+        if os.path.isdir(args.parfums_fp.rstrip('/') + "/" + file_fp) and (not args.sample_ids or (args.sample_ids and file_fp in samples_to_keep)):
             sample_name = file_fp
 
             try:
