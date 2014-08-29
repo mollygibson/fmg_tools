@@ -81,7 +81,6 @@ def main():
                 else:
                     length = "NA"
                 newHeader = ">" + sample_name + "_" + contig_num +" ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name] 
-                file_out.write(newHeader + "\n")
             else:
                 if len(line) >= int(min_len):
                     file_out.write(newHeader + "\n")
@@ -105,7 +104,6 @@ def main():
                     length = "NA"
                 newHeader = ">" + sample_name + "+" + contig_num + " ID:" + parse_mapping.main(args.mapping_fp).id[sample_name] + " Contig:" + contig_num + " Mean:" + mean + " Len:" + length  + " abx:" + parse_mapping.main(args.mapping_fp).abx[sample_name]
 
-                file_out.write(newHeader + "\n")
             else:
                 if len(line) >= int(min_len):
                     file_out.write(newHeader + "\n")
