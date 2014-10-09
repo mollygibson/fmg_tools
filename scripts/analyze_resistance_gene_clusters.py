@@ -60,8 +60,10 @@ def main():
     sample_to_sample = open(args.output_fp + "/sample_to_sample.txt", 'w')
     coselection_out = open(args.output_fp + "/coselection.txt", 'w')
     shared_out = open(args.output_fp + "/shared.txt", 'w')
+    genes_out = open(args.output_fp + "/gene_resistance.txt", 'w')
 
     sum_output.write("Cluster\tClusterSize\tAbxSize\tLibSize\tAbxs\tLibs\tAnnotations\n")
+    genes_out.write("ORF\tCluster\tClusterSize\tAbxSize\tLibSize\tAbxs\tLibs\tAnnotations\n")
     coselection = {}
     shared = {}
     total_libs = {}
@@ -87,6 +89,9 @@ def main():
                 libraries.append(library)
             
         sum_output.write(cluster_num + "\t" + str(len(clusters[cluster_num])) + "\t" + str(len(antibiotics)) + "\t" + str(len(libraries)) + "\t" + ";".join(antibiotics) + "\t" + ";".join(libraries) + "\t" + ";".join(annotations) + "\n")
+
+        for gene in clusters[cluster_num]:
+            genes_out.write(gene + "\t" + cluster_num + "\t" + str(len(clusters[cluster_num])) + "\t" + str(len(antibiotics)) + "\t" + str(len(libraries)) + "\t" + ";".join(antibiotics) + "\t" + ";".join(libraries) + "\t" + ";".join(annotations) + "\n")
 
         # Libraries
         for library in libraries:

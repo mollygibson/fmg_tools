@@ -32,9 +32,9 @@ def main():
         h.run_command("mkdir " + args.output_fp)
 
     # BLAST Proteins
-#    if (args.protein_fp and args.protdb_fp) and (not os.path.exists(args.output_fp + "/blastp_results.txt") or args.force_flag):
-#        blast = "blastp -query " + args.protein_fp + " -db " + args.protdb_fp + " -out " + args.output_fp + "/blastp_results.txt -outfmt 6 -max_target_seqs 1"
-#        h.run_command(blast)
+    if (args.protein_fp and args.protdb_fp) and (not os.path.exists(args.output_fp + "/blastp_results.txt") or args.force_flag):
+        blast = "blastp -query " + args.protein_fp + " -db " + args.protdb_fp + " -out " + args.output_fp + "/blastp_results.txt -outfmt 6 -max_target_seqs 1"
+        h.run_command(blast)
 
     if  (os.path.exists(args.output_fp + "/blastp_results.txt") and not os.path.exists(args.output_fp + "/final_protein_identity.txt")) or args.force_flag:
         if args.entrez:
@@ -42,9 +42,9 @@ def main():
         else:
             global_identity = calculate_global_identity_blastp_fasta(args)
 
-#    if (args.nucl_fp and args.nucldb_fp) and (not os.path.exists(args.output_fp + "/blastn_results.txt") or args.force_flag):
-#        blast = "blastp -query " + args.protein_fp + " -db " + args.protdb_fp + " -out " + args.output_fp + "/blastn_results.txt -outfmt 6 -max_target_seqs 1"
-#        h.run_command(blast)
+    if (args.nucl_fp and args.nucldb_fp) and (not os.path.exists(args.output_fp + "/blastn_results.txt") or args.force_flag):
+        blast = "blastp -query " + args.protein_fp + " -db " + args.protdb_fp + " -out " + args.output_fp + "/blastn_results.txt -outfmt 6 -max_target_seqs 1"
+        h.run_command(blast)
 
 def calculate_global_identity_blastp_fasta(args):
     # import proteins as fasta                                                                                                                                                       

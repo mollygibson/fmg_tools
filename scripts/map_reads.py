@@ -66,14 +66,14 @@ def align_reads(args):
     # Create pileups using samtools                                                                                                                                                                                                                               
     sort_bam_unpaired_fp = args.output_fp + "/unpaired_sorted"
     if not os.path.exists(sort_bam_unpaired_fp + ".bam"):
-        cmd = "samtools view -buS " + args.output_fp + "/unpaired.sam | samtools sort -m 4000000000 - " + sort_bam_unpaired_fp
+        cmd = "samtools view -buS " + args.output_fp + "/unpaired.sam | samtools sort -m 500000000 - " + sort_bam_unpaired_fp
         run_command(cmd)
         cmd = "samtools index " + sort_bam_unpaired_fp + ".bam"
         run_command(cmd)
 
     sort_bam_paired_fp = args.output_fp + "/paired_sorted"
     if not os.path.exists(sort_bam_paired_fp + ".bam"):
-        cmd = "samtools view -buS " + args.output_fp + "/paired.sam | samtools sort -m 4000000000 - " + sort_bam_paired_fp
+        cmd = "samtools view -buS " + args.output_fp + "/paired.sam | samtools sort -m 500000000 - " + sort_bam_paired_fp
         run_command(cmd)
         cmd = "samtools index " + sort_bam_paired_fp + ".bam"
         run_command(cmd)
