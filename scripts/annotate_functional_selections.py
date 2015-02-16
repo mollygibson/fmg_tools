@@ -220,7 +220,9 @@ def merge_hmm_files(output_fp, prefix, args):
     for line in contigs:
         pfam.seek(0)
         tigrfam.seek(0)
-        resfams.seek(0)
+
+        if args.use_resfams or args.use_resfams_only:
+            resfams.seek(0)
 
         hits = []
         contig = line.strip(">").rstrip()
