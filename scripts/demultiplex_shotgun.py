@@ -17,6 +17,7 @@ def main():
     # arguments
     parser.add_argument('-for', dest="forward_fp", help="Path to forward reads")
     parser.add_argument('-rev', dest="reverse_fp", help="Path to reverse reads")
+    parser.add_argument('-sr', dest="single_fp", help="Path to single read file")
     parser.add_argument('-m', dest="mapping_fp", help="Path to mapping file from barcode to sequence")
     parser.add_argument('-o', dest="output_fp", help="Path to output directory")
     args = parser.parse_args()
@@ -37,82 +38,141 @@ def main():
         map_dict_mid6[barcode_mid6] = map_dict[barcode]
 
     # make dictionary of files
-    forward_files = {}
-    reverse_files = {}
-    for sample_id in map_dict_mid6.values():
-        forward_files[sample_id] = open(args.output_fp + "/Forward_" + sample_id + ".fastq", 'a')
-        reverse_files[sample_id] = open(args.output_fp + "/Reverse_" + sample_id + ".fastq", 'a')
+    if args.forward_fp and args.reverse_fp:
+        forward_files = {}
+        reverse_files = {}
+        for sample_id in map_dict_mid6.values():
+            forward_files[sample_id] = open(args.output_fp + "/Forward_" + sample_id + ".fastq", 'a')
+            reverse_files[sample_id] = open(args.output_fp + "/Reverse_" + sample_id + ".fastq", 'a')
 
-    forward_files["unknown"] = open(args.output_fp + "/Forward_unknown.fastq", 'a')
-    reverse_files["unknown"] = open(args.output_fp + "/Reverse_unknown.fastq", 'a')
+            forward_files["unknown"] = open(args.output_fp + "/Forward_unknown.fastq", 'a')
+            reverse_files["unknown"] = open(args.output_fp + "/Reverse_unknown.fastq", 'a')
+    else:
+        read_files = {}
+        for sample_id in map_dict_mid6.values():
+            read_files[sample_id] = open(args.output_fp + "/" + sample_id + ".fastq", 'a')
+            read_files["unknown"] = open(args.output_fp + "/unknown.fastq", 'a')
+
+
 
     # read counters
     total_reads = 0
     barcode_reads = {}
 
     # Loop through forward and reverse reads at the same time
-    with open(args.forward_fp) as fwd, open(args.reverse_fp) as rev:
-        while True:
-            try:
-                # iterate total reads
-                total_reads = total_reads + 1
-
-                # Read name
-                fwd_name = next(fwd).rstrip()
-                rev_name = next(rev).rstrip()
-
-                # Sequence
-                fwd_seq = next(fwd).rstrip()
-                rev_seq = next(rev).rstrip()
-                
-                # check to see if it matches a barcode                                                                                                                                                                                       
-                barcode_match = "unknown"
-                if fwd_seq[1:7] in map_dict_mid6.keys() and rev_seq[1:7] in map_dict_mid6.keys():
-                    # found a match                                                                                                                                                                                                          
-                    barcode_match = fwd_seq[1:7]
-                if not barcode_match in barcode_reads.keys():
-                    barcode_reads[barcode_match] = 1
-                else:
-                    barcode_reads[barcode_match] = barcode_reads[barcode_match] + 1
-                        
-                # throw this line away
-                trash = next(fwd)
-                trash = next(rev)
-                
-                # quality scores
-                fwd_qual = next(fwd).rstrip()
-                rev_qual = next(rev).rstrip()
-                
-                # get the sample id for the barcode
-                sample_id = "unknown"
-                if barcode_match in map_dict_mid6.keys():
-                    sample_id = map_dict_mid6[barcode_match]
-
-                # Print out read to forward file
-                seq = fwd_seq[8:len(fwd_seq)]
-                qual = fwd_qual[8:len(fwd_qual)]
-                if len(seq) == len(qual):
-                    forward_files[sample_id].write(fwd_name + "\n" + fwd_seq[8:len(fwd_seq)] + "\n+\n" + fwd_qual[8:len(fwd_qual)] + "\n")
-                else:
-                    print("Sequence and quality not same length for forward: " + fwd_name)
+    if args.forward_fp and args.reverse_fp:
+        with open(args.forward_fp) as fwd, open(args.reverse_fp) as rev:
+            while True:
+                try:
+                    # iterate total reads
+                    total_reads = total_reads + 1
                     
-                # Print out the read tot her reverse file
-                seq = rev_seq[8:len(fwd_seq)]
-                qual = rev_qual[8:len(fwd_qual)]
-                if len(seq) == len(qual):
-                    reverse_files[sample_id].write(rev_name + "\n" + rev_seq[8:len(rev_seq)] + "\n+\n" + rev_qual[8:len(rev_qual)] + "\n")
-                else:
-                    print("Sequence and quality not same length for reverse: " + rev_name) 
-
-                if total_reads % 1000000 == 0:
-                    current_time = time.time() - start_time
-                    print(str(total_reads) + " processed - " + str(current_time) + " seconds")
-                    sys.stdout.flush()
+                    # Read name
+                    fwd_name = next(fwd).rstrip()
+                    rev_name = next(rev).rstrip()
+                    
+                    # Sequence
+                    fwd_seq = next(fwd).rstrip()
+                    rev_seq = next(rev).rstrip()
+                    
+                    # check to see if it matches a barcode                                                                                                                                                                                   
+                    barcode_match = "unknown"
+                    if fwd_seq[1:7] in map_dict_mid6.keys() and rev_seq[1:7] in map_dict_mid6.keys():
+                        # found a match                                                                                                                                                                                                      
+                        barcode_match = fwd_seq[1:7]
+                    if not barcode_match in barcode_reads.keys():
+                        barcode_reads[barcode_match] = 1
+                    else:
+                        barcode_reads[barcode_match] = barcode_reads[barcode_match] + 1
+                        
+                    # throw this line away
+                    trash = next(fwd)
+                    trash = next(rev)
+                    
+                    # quality scores
+                    fwd_qual = next(fwd).rstrip()
+                    rev_qual = next(rev).rstrip()
                 
-            except StopIteration:
-                break
+                    # get the sample id for the barcode
+                    sample_id = "unknown"
+                    if barcode_match in map_dict_mid6.keys():
+                        sample_id = map_dict_mid6[barcode_match]
 
-    # Ourput stats
+                    # Print out read to forward file
+                    seq = fwd_seq[8:len(fwd_seq)]
+                    qual = fwd_qual[8:len(fwd_qual)]
+                    if len(seq) == len(qual):
+                        forward_files[sample_id].write(fwd_name + "\n" + fwd_seq[8:len(fwd_seq)] + "\n+\n" + fwd_qual[8:len(fwd_qual)] + "\n")
+                    else:
+                        print("Sequence and quality not same length for forward: " + fwd_name)
+                    
+                    # Print out the read tot her reverse file
+                    seq = rev_seq[8:len(fwd_seq)]
+                    qual = rev_qual[8:len(fwd_qual)]
+                    if len(seq) == len(qual):
+                        reverse_files[sample_id].write(rev_name + "\n" + rev_seq[8:len(rev_seq)] + "\n+\n" + rev_qual[8:len(rev_qual)] + "\n")
+                    else:
+                        print("Sequence and quality not same length for reverse: " + rev_name) 
+
+                    if total_reads % 1000000 == 0:
+                        current_time = time.time() - start_time
+                        print(str(total_reads) + " processed - " + str(current_time) + " seconds")
+                        sys.stdout.flush()
+                        
+                except StopIteration:
+                    break
+    elif args.single_fp:
+        with open(args.single_fp) as reads:
+            while True:
+                try:
+                    # iterate total reads                                                                                                                                                                                                    
+                    total_reads = total_reads + 1
+
+                    # Read name                                                                                                                                                                                                              
+                    sr_name = next(reads).rstrip()
+
+                    # Sequence                                                                                                                                                                                                               
+                    sr_seq = next(reads).rstrip()
+
+                    # check to see if it matches a barcode                                                                                                                                                                                   
+                    barcode_match = "unknown"
+                    if sr_seq[1:7] in map_dict_mid6.keys():
+                        # found a match                                                                                                                                                                                                      
+                        barcode_match = sr_seq[1:7]
+                    if not barcode_match in barcode_reads.keys():
+                            barcode_reads[barcode_match] = 1
+                    else:
+                        barcode_reads[barcode_match] = barcode_reads[barcode_match] + 1
+    
+                    # throw this line away                             
+                    trash = next(reads)
+                    
+                    # quality scores                                                                                                                                                                                            
+                    sr_qual = next(reads).rstrip()
+
+                    # get the sample id for the barcode                                                                                                                                                                          
+                    sample_id = "unknown"
+                    if barcode_match in map_dict_mid6.keys():
+                        sample_id = map_dict_mid6[barcode_match]
+                    
+                    # Print out the read tot her reverse file                                                                                                                                                                                
+                    seq = sr_seq[8:len(sr_seq)]
+                    qual = sr_qual[8:len(sr_qual)]
+                    if len(seq) == len(qual):
+                        read_files[sample_id].write(sr_name + "\n" + sr_seq[8:len(sr_seq)] + "\n+\n" + sr_qual[8:len(sr_qual)] + "\n")
+                    else:
+                        print("Sequence and quality not same length for single reads: " + sr_name)
+
+                    if total_reads % 1000000 == 0:
+                        current_time = time.time() - start_time
+                        print(str(total_reads) + " processed - " + str(current_time) + " seconds")
+                        sys.stdout.flush()
+
+                except StopIteration:
+                    break
+
+
+    # Output Stats
     with open(args.output_fp + "/distribution_stats.txt", 'w') as dist_out:
         for barcode in map_dict_mid6.keys():
             if barcode in barcode_reads.keys():

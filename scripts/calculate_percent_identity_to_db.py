@@ -24,7 +24,7 @@ def main():
     parser.add_argument('-anno_tab', dest="anno_tab", help="Path to annotation file (tab)")
     parser.add_argument('-entrez', dest="entrez", help="Use this if you are going against NCBI, otherwise use fasta database", action='store_true')
     parser.add_argument('-o', dest="output_fp", help="Path to output")
-    parser.add_argument('-f', dest="force_flag", help="Force new output", action='store_false')
+    parser.add_argument('-f', dest="force_flag", help="Force new output", action='store_true')
     args = parser.parse_args()
 
     # Make output dir
@@ -40,6 +40,7 @@ def main():
         if args.entrez:
             global_identity = calculate_global_identity_blastp_ncbi(args)
         else:
+            print("calculating")
             global_identity = calculate_global_identity_blastp_fasta(args)
 
     if (args.nucl_fp and args.nucldb_fp) and (not os.path.exists(args.output_fp + "/blastn_results.txt") or args.force_flag):
@@ -71,7 +72,7 @@ n=10 -gapextend=0.5"
             if line.startswith("# Identity:"):
                 identity = line.split("(")[1].rstrip("\n").rstrip(")").rstrip("%")
 
-        final.write(id_number1 + "\t" + retrieve_annotations(id_number1, args.anno_tab) + "\t"+ id_number2 + "\n")
+        final.write(id_number1 + "\t" + retrieve_annotations(id_number1, args.anno_tab) + "\t"+ id_number2 + "\t" + identity + "\n")
         
     h.run_command("rm " + args.output_fp +  "/temp_*")
 
@@ -129,6 +130,7 @@ def retrieve_annotations(gene, anno_fp):
     contig = int(gene.split('.')[1].split(':')[0])
     gene_start = int(gene.split('.')[1].split(':')[1].split('-')[0])
     gene_stop = int(gene.split('.')[1].split(':')[1].split('-')[1])
+
 
     annotations = pandas.io.parsers.read_csv(anno_fp, sep="\t")
 
