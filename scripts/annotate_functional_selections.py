@@ -5,7 +5,7 @@ __email__ = "molly.gibson@wustl.edu"
 
 
 # Python imports
-import argparse, subprocess, os, itertools, operator
+import argparse, subprocess, os, itertools, operator, re, sys
 # Other imports
 import parse_config, parse_mapping
 
@@ -32,6 +32,18 @@ def main():
     if args.use_resfams and args.use_resfams_only:
         parser.exit(status=0, message="You can only use one resfams database.\nCheck usage with 'annotate_functional_selections.py -h'.\n\n")
 
+    # check to make sure that there are no spaces in headers
+    if args.contig_fp:
+        fasta_file = args.contig_fp
+    elif args.protein_fp:
+        fasta_file = args.protein_fp
+
+    for line in open(fasta_file, 'r'):
+        if line.startswith(">"):
+            header = line.rstrip()
+            if re.search(r"\s", header):
+                sys.exit("You can not have white space in the header of your fasta file.")
+ 
     # set the output path and make the directory
     if args.contig_fp:
         prefix = os.path.splitext(args.contig_fp)[0]
@@ -53,6 +65,7 @@ def main():
         protein_fp = args.protein_fp
     annotation_fp = annotate_proteins(protein_fp, output_fp, args)
     
+
     # merge hmm files
 #    if (not os.path.isfile(output_fp + '/' + prefix + '.HMMAnnotation.txt') or args.override) and args.contig_fp:
     merge_hmm_files(output_fp, prefix, args)
