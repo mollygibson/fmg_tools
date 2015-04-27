@@ -1,5 +1,5 @@
 mgm_model_fp	/home/gdlab/shared/old-shared/software/PARFuMS_software/MetaGeneMark/MetaGeneMark_linux64/MetaGeneMark_v1.mod
 resfam_database_fp	/home/gdlab/shared/databases/resfams/Resfams-full.hmm
-resfam_only_database_fp	/home/gdlab/shared/databases/resfams/ResFams.hmm
+resfam_only_database_fp	/home/gdlab/shared/databases/resfams/Resfams.hmm
 pfam_database_fp	/home/gdlab/mgibson/HMMER/hmmdatabases/Pfam/Pfam-A.hmm
 tigrfam_database_fp	/home/gdlab/mgibson/HMMER/hmmdatabases/TIGRFAM/TIGRFAMs_12.0_HMM.LIB		
