@@ -17,6 +17,7 @@ def main():
     # arguments
     parser.add_argument('-for', dest="forward_fp", help="Path to forward reads")
     parser.add_argument('-rev', dest="reverse_fp", help="Path to reverse reads")
+    parser.add_argument('-sr', dest="single_fp", help="Path to single read file")
     parser.add_argument('-m', dest="mapping_fp", help="Path to mapping file from barcode to sequence")
     parser.add_argument('-o', dest="output_fp", help="Path to output directory")
     args = parser.parse_args()
@@ -37,14 +38,22 @@ def main():
         map_dict_mid6[barcode_mid6] = map_dict[barcode]
 
     # make dictionary of files
-    forward_files = {}
-    reverse_files = {}
-    for sample_id in map_dict_mid6.values():
-        forward_files[sample_id] = open(args.output_fp + "/Forward_" + sample_id + ".fastq", 'a')
-        reverse_files[sample_id] = open(args.output_fp + "/Reverse_" + sample_id + ".fastq", 'a')
+    if args.forward_fp and args.reverse_fp:
+        forward_files = {}
+        reverse_files = {}
+        for sample_id in map_dict_mid6.values():
+            forward_files[sample_id] = open(args.output_fp + "/Forward_" + sample_id + ".fastq", 'a')
+            reverse_files[sample_id] = open(args.output_fp + "/Reverse_" + sample_id + ".fastq", 'a')
 
-    forward_files["unknown"] = open(args.output_fp + "/Forward_unknown.fastq", 'a')
-    reverse_files["unknown"] = open(args.output_fp + "/Reverse_unknown.fastq", 'a')
+            forward_files["unknown"] = open(args.output_fp + "/Forward_unknown.fastq", 'a')
+            reverse_files["unknown"] = open(args.output_fp + "/Reverse_unknown.fastq", 'a')
+    else:
+        read_files = {}
+        for sample_id in map_dict_mid6.values():
+            read_files[sample_id] = open(args.output_fp + "/" + sample_id + ".fastq", 'a')
+            read_files["unknown"] = open(args.output_fp + "/unknown.fastq", 'a')
+
+
 
     # read counters
     total_reads = 0
@@ -116,7 +125,7 @@ def main():
                 except StopIteration:
                     break
 
-    # Ourput stats
+    # Output Stats
     with open(args.output_fp + "/distribution_stats.txt", 'w') as dist_out:
         for barcode in map_dict_mid6.keys():
             if barcode in barcode_reads.keys():

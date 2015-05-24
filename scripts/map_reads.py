@@ -36,8 +36,22 @@ def main():
     paired_count = paired_stats.readline().split()[0]
     total_reads = int(unpaired_count) + int(paired_count)
 
+    print total_reads
     # Calcualte RPKM
     calculate_rpkm(args, sort_bam_paired_fp, sort_bam_unpaired_fp, total_reads)
+
+    coverage_file = args.output_fp + "/coverage.txt"
+    percent_coverage_file = args.output_fp + "/percent_coverage_by_plasmid.txt"
+
+    [ave_cov, perc_cov_base,total_base_by_contig,per_cov_contigs,ave_cov_contigs] = calculate_average_coverage(pileup_file_paired, pileup_file_unpaired, alignment_fp)
+
+    output = open(coverage_file, 'w')
+    output.write(str(total_reads) + "\t" + str(ave_cov) + "\t" + str(perc_cov_base) + "\n")
+
+    output2 = open(percent_coverage_file, 'w')
+    for contig_num in total_base_by_contig.keys():
+        output2.write(contig_num + "\t" + str(total_reads) + "\t" + str(total_base_by_contig[contig_num]) + "\t" + str(per_cov_contigs[contig_num]) + "\n")
+
 
 def align_reads(args):
     # Determine which file we will align rarefied reads to                                                                                                                                                                                                        
@@ -80,12 +94,12 @@ def align_reads(args):
 
     pileup_file_unpaired = args.output_fp + "/unpaired.pileup"
     if not os.path.exists(pileup_file_unpaired):
-        cmd = "samtools mpileup -f " + alignment_fp + " " + sort_bam_unpaired_fp + ".bam > " + pileup_file_unpaired
+        cmd = "samtools mpileup -f " + alignment_fp + ".fna " + sort_bam_unpaired_fp + ".bam > " + pileup_file_unpaired
         run_command(cmd)
 
     pileup_file_paired = args.output_fp + "/paired.pileup"
     if not os.path.exists(pileup_file_paired):
-        cmd = "samtools mpileup -f " + alignment_fp + " " + sort_bam_paired_fp + ".bam > " + pileup_file_paired
+        cmd = "samtools mpileup -f " + alignment_fp + ".fna " + sort_bam_paired_fp + ".bam > " + pileup_file_paired
         run_command(cmd)
 
     return [pileup_file_paired, pileup_file_unpaired, sort_bam_unpaired_fp, sort_bam_paired_fp, alignment_fp]
@@ -118,7 +132,7 @@ def calculate_rpkm(args, sort_bam_paired_fp, sort_bam_unpaired_fp, total_reads):
     joined_df = unpaired.join(paired, how="outer")
     num_mapped = joined_df.loc[:,['orf1', 'len1', 'mapped1', 'mapped2']]
 
-    num_mapped['total_mapped'] = num_mapped['mapped1'] + num_mapped['mapped2']
+    num_mapped['total_mapped'] = ((num_mapped['mapped1'] * 2) + num_mapped['mapped2'])
 
     num_mapped['RPKM'] = (num_mapped['total_mapped'] * 10000000000)/(total_reads*num_mapped['len1'])
 
@@ -126,6 +140,73 @@ def calculate_rpkm(args, sort_bam_paired_fp, sort_bam_unpaired_fp, total_reads):
 
     final_df.to_csv(args.output_fp + "/rpkm.txt", sep="\t", index=False)
 
+def calculate_average_coverage(paired_pileup_fp, unpaired_pileup_fp, reference):
+    # Calcualte the total number of bases in the functional metagenomics file                                                                                                                                                                 
+    contig_metadata = pandas.io.parsers.read_table(reference + ".fna.fai", header=None)
+    total_base_positions = contig_metadata[1].sum()
+
+    contig_metadata.columns = ['contig', 'read_len1', 'offset', 'reads_len2', 'other']
+    total_base_by_contig = dict(zip(contig_metadata.contig, contig_metadata.read_len1))
+
+    # Import both paire and unpaired pileups                                                                                                                                                                                                  
+
+    paired = pandas.io.parsers.read_table(paired_pileup_fp, header=None,sep="\s+")
+    paired_coverage = paired.loc[:,[0,1,3]]
+
+    unpaired = pandas.io.parsers.read_table(unpaired_pileup_fp, header=None, sep="\s+")
+    unpaired_coverage = unpaired.loc[:,[0,1,3]]
+
+    # Join the two dataframes together on both the contig and the position                                                                                                                                                                   
+    index = [unpaired_coverage[0], unpaired_coverage[1]]
+    tuples = list(zip(*index))
+    unpaired_coverage.index = tuples
+
+    index = [paired_coverage[0], paired_coverage[1]]
+    tuples = list(zip(*index))
+    paired_coverage.index = tuples
+
+    paired_coverage.columns = ['contig', 'position', 'coverage1']
+    unpaired_coverage.columns = ['contig', 'position', 'coverage2']
+
+    joined_df = pandas.merge(unpaired_coverage,paired_coverage,how='outer',on=['contig','position'])
+    coverage_df = joined_df.loc[:,['contig', 'position','coverage1', 'coverage2']]
+    coverage_df.fillna(0)
+
+    # sum the coverage for paired and unpaired                                                                                                                                                                                                
+    coverage_df['sum'] = coverage_df.sum(axis=1)
+    average_coverage_per_base =  coverage_df['sum'].sum()/total_base_positions
+
+    # count the number of bases with >0 reads                                                                                                                                                                                                 
+    ser = pandas.Series(coverage_df['sum'])
+    num_bases_greater = (ser >= 1).sum()
+    percent_covered_bases = num_bases_greater/float(total_base_positions)
+
+    # Do this again by contig                                                                                                                                                                                                                 
+    contigs = coverage_df.groupby('contig')
+
+    # bp covered                                                                                                                                                                                                                              
+    per_cov_dict = coverage_df.groupby('contig').size()
+    per_cov_contigs = {}
+    for contig_num in total_base_by_contig.keys():
+        if contig_num in per_cov_dict:
+            per_cov_contigs[contig_num] = float(per_cov_dict[contig_num])/total_base_by_contig[contig_num]
+        else:
+            per_cov_contigs[contig_num] = 0
+
+
+    # ave coverage                                                                                                                                                                                                                            
+    ave_cov_df = contigs.sum()
+    ave_cov_dict = ave_cov_df['sum'].to_dict()
+    ave_cov_contigs = {}
+    for contig_num in total_base_by_contig.keys():
+        if contig_num in per_cov_dict.keys():
+            ave_cov_contigs[contig_num] = ave_cov_dict[contig_num]/total_base_by_contig[contig_num]
+        else:
+            ave_cov_contigs[contig_num] = 0
+
+    # basepairs covered                                                                                                                                                                                                                       
+
+    return [average_coverage_per_base, percent_covered_bases, total_base_by_contig, per_cov_contigs, ave_cov_contigs]
 
 
 def run_command(command):
