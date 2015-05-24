@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--resfams', dest="use_resfams", help="Use the full Resfams profile HMM database", action='store_true', default=False)
     parser.add_argument('--resfams_only', dest="use_resfams_only", help="Use the Resfams-only profile HMM database", action='store_true', default=False)
     parser.add_argument('--no_ga', dest="no_ga", help="Do not use gathering thresholds for profile HMM annotation", action='store_true', default=False)
+    parser.add_argument('--only_args', dest="only_args", help="Only annotate with one of the Resfams databases", action='store_true', default=False)
     parser.add_argument('-o', dest="output_fp", help="Path to output directory for annotation")
     parser.add_argument('-f', dest="override", help="Override all previous output in the designated output directory", action='store_true', default=False)
     parser.add_argument('-m', dest="mapping_fp", help="Mapping directory of sample name to antibiotic")
@@ -179,13 +180,13 @@ def call_orfs(contigs, output_fp, prefix, args):
 
 # annotate proteins
 def annotate_proteins(proteins,output_fp, args):
-    if not os.path.isfile(output_fp + '/Pfam-targets.txt') or args.override:
+    if (not os.path.isfile(output_fp + '/Pfam-targets.txt') or args.override) and not args.only_args:
         if args.no_ga:
             command = 'hmmscan -o /dev/null --tblout ' + output_fp + '/Pfam-targets.txt ' + parse_config.main().pfam_database_fp + ' ' +  proteins
         else:
             command = 'hmmscan -o /dev/null --cut_ga --tblout ' + output_fp + '/Pfam-targets.txt ' + parse_config.main().pfam_database_fp + ' ' +  proteins
         subprocess.call(command, shell=True)
-    if not os.path.isfile(output_fp + '/Tigrfam-targets.txt') or args.override:
+    if (not os.path.isfile(output_fp + '/Tigrfam-targets.txt') or args.override) and not args.only_args:
         if args.no_ga:
             command = 'hmmscan -o /dev/null --tblout ' + output_fp + '/Tigrfam-targets.txt ' + parse_config.main().tigrfam_database_fp + ' ' + proteins
         else:

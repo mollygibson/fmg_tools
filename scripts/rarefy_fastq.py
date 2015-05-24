@@ -16,11 +16,15 @@ def main():
     parser.add_argument('-i', dest="fastq_fp", help="Path to fastq file to rarefy")
     parser.add_argument('-dir', dest="directory", help="Path to list of fastq files")
     parser.add_argument('-level', dest="level", help="Level to rarify reads")
+    parser.add_argument('-o', dest="out_fp", help="output")
     args = parser.parse_args()
 
 
     if args.fastq_fp:
-        rareified_fp = args.fastq_fp.split('.')[0] + "_" + str(args.level) + ".fasta"
+        if args.out_fp:
+            rareified_fp = args.out_fp
+        else:
+            rareified_fp = args.fastq_fp.split('.')[0] + "_" + str(args.level) + ".fasta"
         rarefy(args.fastq_fp, rareified_fp, args.level)
     elif args.directory:
         num_files = len([name for name in os.listdir(args.directory) if os.path.isfile(name)])

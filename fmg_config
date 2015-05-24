@@ -1,5 +1,5 @@
-mgm_model_fp	/home/gdlab/shared/old-shared/software/PARFuMS_software/MetaGeneMark/MetaGeneMark_linux64/MetaGeneMark_v1.mod
-resfam_database_fp	/home/gdlab/mgibson/fmg_tools/resfams/ResFams.hmm
-resfam_only_database_fp	/home/gdlab/mgibson/fmg_tools/resfams/ResFams-only.hmm
-pfam_database_fp	/home/gdlab/mgibson/HMMER/hmmdatabases/Pfam/Pfam-A.hmm
-tigrfam_database_fp	/home/gdlab/mgibson/HMMER/hmmdatabases/TIGRFAM/TIGRFAMs_12.0_HMM.LIB		
+mgm_model_fp	/home/molly.gibson/software/MetaGeneMark/MetaGeneMark_v1.mod
+resfam_database_fp	/home/molly.gibson/fmg_tools/resfams/ResFams.hmm
+resfam_only_database_fp	/home/molly.gibson/fmg_tools/resfams/ResFams-only.hmm
+pfam_database_fp	/scratch/gdlab/mgibson/databases/hmm/Pfam-A.hmm
+tigrfam_database_fp	/scratch/gdlab/mgibson/databases/hmm/TIGRFAMs_12.0_HMM.LIB		
